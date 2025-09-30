@@ -18,17 +18,17 @@ import javax.sql.DataSource;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class JdbcCursorReaderBuilder {
 
-    public static <T> JdbcCursorItemReader<T> build(ComponentConfig config, ApplicationContext context) {
+    public static <I> JdbcCursorItemReader<I> build(ComponentConfig config, ApplicationContext context) {
         try {
             JdbcCursorReaderConfig jdbcConfig = (JdbcCursorReaderConfig) config.getConfig();
 
             DataSource ds = context.getBean(jdbcConfig.getDatasource(), DataSource.class);
 
             // Instantiate RowMapper and PreparedStatementSetter via ReflectionUtils
-            RowMapper<T> rowMapper = ReflectionUtils.instantiateClass(jdbcConfig.getMappedClass(), RowMapper.class);
+            RowMapper<I> rowMapper = ReflectionUtils.instantiateClass(jdbcConfig.getMappedClass(), RowMapper.class);
             PreparedStatementSetter psSetter = ReflectionUtils.instantiateClass(jdbcConfig.getPreparedStatementClass(), PreparedStatementSetter.class);
 
-            return new JdbcCursorItemReaderBuilder<T>()
+            return new JdbcCursorItemReaderBuilder<I>()
                     .name(config.getName())
                     .dataSource(ds)
                     .sql(jdbcConfig.getSql())

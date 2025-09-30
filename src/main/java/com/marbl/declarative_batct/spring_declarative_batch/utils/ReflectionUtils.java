@@ -7,6 +7,8 @@ import org.springframework.util.StringUtils;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -113,5 +115,26 @@ public final class ReflectionUtils {
         }
         return true;
     }
+
+    public static <T> Class<? extends T> loadClass(String className, Class<T> expectedType) {
+        if (!StringUtils.hasText(className)) {
+            throw new IllegalArgumentException("Class name must not be empty");
+        }
+        try {
+            Class<?> clazz = Class.forName(className);
+            if (!expectedType.isAssignableFrom(clazz)) {
+                throw new IllegalArgumentException(
+                        String.format("Class %s does not implement/extend %s", className, expectedType.getName())
+                );
+            }
+            @SuppressWarnings("unchecked")
+            Class<? extends T> safeClass = (Class<? extends T>) clazz;
+            return safeClass;
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Error loading class " + className, e);
+        }
+    }
+
+
 }
 

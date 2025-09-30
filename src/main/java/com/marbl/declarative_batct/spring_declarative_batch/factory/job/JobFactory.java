@@ -1,7 +1,9 @@
 package com.marbl.declarative_batct.spring_declarative_batch.factory.job;
 
+import com.marbl.declarative_batct.spring_declarative_batch.factory.step.AbstractSteplet;
 import com.marbl.declarative_batct.spring_declarative_batch.factory.step.StepFactory;
 import com.marbl.declarative_batct.spring_declarative_batch.model.support.BatchJobConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.model.support.ListenerConfig;
 import com.marbl.declarative_batct.spring_declarative_batch.model.support.StepTransitionConfig;
 import com.marbl.declarative_batct.spring_declarative_batch.model.support.StepsConfig;
 import lombok.RequiredArgsConstructor;
@@ -14,22 +16,22 @@ import org.springframework.batch.core.job.builder.SimpleJobBuilder;
 import org.springframework.batch.core.job.flow.JobExecutionDecider;
 import org.springframework.batch.core.job.flow.support.SimpleFlow;
 import org.springframework.batch.core.repository.JobRepository;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
-
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class JobFactory {
 
-    private final StepFactory stepFactory;
     private final JobRepository jobRepository;
+    private final ApplicationContext context;
 
     /**
-     * Create a Job dynamically from YAML config
+     * Create a Job dynamically from YAML config using AbstractSteplet beans
      */
     public Job createJob(BatchJobConfig jobConfig) throws Exception {
         if (jobConfig == null || jobConfig.getSteps() == null || jobConfig.getSteps().isEmpty()) {
@@ -38,12 +40,14 @@ public class JobFactory {
 
         log.info("Creating job '{}'", jobConfig.getName());
 
-        // --- Create all steps ---
+        // --- Create all steps using steplet beans ---
         Map<String, Step> stepsMap = new HashMap<>();
         for (StepsConfig stepConfig : jobConfig.getSteps()) {
-            Step step = stepFactory.createStep(stepConfig);
+            AbstractSteplet<?, ?> steplet = resolveSteplet(stepConfig);
+            steplet.setConfig(stepConfig);
+            Step step = steplet.buildStep();
             stepsMap.put(stepConfig.getName(), step);
-            log.info("Step '{}' created", stepConfig.getName());
+            log.info("Step '{}' created via steplet '{}'", stepConfig.getName(), steplet.getClass().getSimpleName());
         }
 
         // --- Initialize JobBuilder with first step ---
@@ -67,7 +71,7 @@ public class JobFactory {
                             .start(currentStep)
                             .on(transition.getOnCondition())
                             .to(nextStep)
-                            .end(); // flow-level end
+                            .end();
                     jobBuilder.next((JobExecutionDecider) flow);
                 }
             }
@@ -81,15 +85,38 @@ public class JobFactory {
                 SimpleFlow flow = new FlowBuilder<SimpleFlow>("flow-" + currentStep.getName() + "-" + nextStep.getName())
                         .start(currentStep)
                         .next(nextStep)
-                        .end(); // flow-level end
+                        .end();
                 jobBuilder.next((JobExecutionDecider) flow);
             }
         }
 
-        // --- Build the job (no .end() on job itself) ---
+        // --- Attach JobExecutionListener if defined ---
+        ListenerConfig jobListenerConfig = jobConfig.getListener();
+        if (jobListenerConfig != null && jobListenerConfig.getName() != null && !jobListenerConfig.getName().isEmpty()) {
+            try {
+                var listener = context.getBean(jobListenerConfig.getName(), org.springframework.batch.core.JobExecutionListener.class);
+                jobBuilder.listener(listener);
+                log.info("Attached JobExecutionListener '{}' to job '{}'", jobListenerConfig.getName(), jobConfig.getName());
+            } catch (Exception e) {
+                log.error("Failed to attach JobExecutionListener '{}'", jobListenerConfig.getName(), e);
+                throw new IllegalArgumentException("Invalid JobExecutionListener bean: " + jobListenerConfig.getName(), e);
+            }
+        }
+
+        // --- Build the job ---
         Job job = jobBuilder.build();
         log.info("Job '{}' created successfully with {} steps", jobConfig.getName(), stepsMap.size());
 
         return job;
+    }
+
+    /**
+     * Resolve AbstractSteplet bean from Spring context using the step name
+     */
+    private AbstractSteplet<?, ?> resolveSteplet(StepsConfig config) {
+        if (!context.containsBean(config.getName())) {
+            throw new IllegalArgumentException("No steplet bean found for name: " + config.getName());
+        }
+        return context.getBean(config.getName(), AbstractSteplet.class);
     }
 }

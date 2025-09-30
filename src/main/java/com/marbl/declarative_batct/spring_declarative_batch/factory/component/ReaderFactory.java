@@ -3,18 +3,26 @@ package com.marbl.declarative_batct.spring_declarative_batch.factory.component;
 import com.marbl.declarative_batct.spring_declarative_batch.builder.reader.FlatFileReaderBuilder;
 import com.marbl.declarative_batct.spring_declarative_batch.builder.reader.JdbcCursorReaderBuilder;
 import com.marbl.declarative_batct.spring_declarative_batch.builder.reader.JdbcPagingReaderBuilder;
+import com.marbl.declarative_batct.spring_declarative_batch.exception.InvalidBeanException;
+import com.marbl.declarative_batct.spring_declarative_batch.exception.TypeNotSupportedException;
 import com.marbl.declarative_batct.spring_declarative_batch.model.support.ComponentConfig;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.util.Map;
 
+@Slf4j
 @Component
-public class ReaderFactory extends AbstractComponentFactory<ItemReader<?>> {
+public class ReaderFactory {
 
+    private final ApplicationContext context;
+
+    // Reader types -> expected class
     private static final Map<String, Class<?>> READER_TYPES = Map.of(
             "FlatFileItemReader", FlatFileItemReader.class,
             "JdbcPagingItemReader", org.springframework.batch.item.database.JdbcPagingItemReader.class,
@@ -23,31 +31,51 @@ public class ReaderFactory extends AbstractComponentFactory<ItemReader<?>> {
             "ItemReader", ItemReader.class
     );
 
-    // Builder map now accepts chunk as extra parameter
-    @FunctionalInterface
-    private interface ReaderBuilderFn {
-        ItemReader<?> build(ComponentConfig config, ApplicationContext ctx, int chunk) throws Exception;
-    }
-
-    private static final Map<String, ReaderBuilderFn> BUILDER_MAP = Map.of(
-            "FlatFileItemReader", (config, ctx, chunk) -> FlatFileReaderBuilder.build(config),
-            "JdbcCursorItemReader", (config, ctx, chunk) -> JdbcCursorReaderBuilder.build(config, ctx),
-            "JdbcPagingItemReader", JdbcPagingReaderBuilder::build
-    );
-
     public ReaderFactory(ApplicationContext context) {
-        super(context);
+        this.context = context;
     }
 
-    public ItemReader<?> createReader(ComponentConfig config, int chunk) throws Exception {
-        var reader = createFromBean(config.getName(), config.getType(), READER_TYPES);
-        if (reader != null) return reader;
+    /**
+     * Create a typed ItemReader<I> based on config or Spring context.
+     */
+    @SuppressWarnings("unchecked")
+    public <I> ItemReader<I> createReader(ComponentConfig config, int chunk) throws Exception {
 
-        var builder = BUILDER_MAP.get(config.getType());
-        if (builder == null) {
-            throw new ComponentTypeNotSupportedException("Unknown reader type: " + config.getType());
+        if (!StringUtils.hasText(config.getType())) {
+            throw new IllegalArgumentException("Reader type must be provided");
         }
 
-        return builder.build(config, context, chunk);
+        // 1️⃣ Try to load reader from Spring context
+        if (StringUtils.hasText(config.getName()) && context.containsBean(config.getName())) {
+            Object bean = context.getBean(config.getName());
+            if (!(bean instanceof ItemReader<?> readerBean)) {
+                throw new InvalidBeanException("Bean '" + config.getName() + "' is not an ItemReader");
+            }
+            if (!isAllowedReader(readerBean, config.getType())) {
+                throw new InvalidBeanException(
+                        "Bean '" + config.getName() + "' does not match type '" + config.getType() + "'"
+                );
+            }
+            log.debug("Using existing reader bean '{}'", config.getName());
+            return (ItemReader<I>) readerBean;
+        }
+
+        // 2️⃣ Build a new reader using Java 17 switch expression
+        ItemReader<I> reader = switch (config.getType()) {
+            case "FlatFileItemReader" -> FlatFileReaderBuilder.build(config);
+            case "JdbcCursorItemReader" -> JdbcCursorReaderBuilder.build(config, context);
+            case "JdbcPagingItemReader" -> JdbcPagingReaderBuilder.build(config,context, chunk);
+            // case "MongoCursorItemReader" -> MongoCursorReaderBuilder.<I>build(config, context);
+            default -> throw new TypeNotSupportedException("Unknown reader type: " + config.getType());
+        };
+
+        log.debug("Created new reader of type '{}'", config.getType());
+        return reader;
+    }
+
+    private boolean isAllowedReader(Object bean, String type) {
+        Class<?> expected = READER_TYPES.get(type);
+        if (expected == null) throw new TypeNotSupportedException("Unknown reader type: " + type);
+        return expected.isInstance(bean);
     }
 }

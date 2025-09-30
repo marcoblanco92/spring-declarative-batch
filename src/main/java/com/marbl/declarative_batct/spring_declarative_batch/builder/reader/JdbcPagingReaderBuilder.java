@@ -18,13 +18,13 @@ import static com.marbl.declarative_batct.spring_declarative_batch.utils.Reflect
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class JdbcPagingReaderBuilder {
 
-    public static <T> JdbcPagingItemReader<T> build(ComponentConfig config, ApplicationContext context, int chunk) {
+    public static <I> JdbcPagingItemReader<I> build(ComponentConfig config, ApplicationContext context, int chunk) {
         try {
             JdbcPagingReaderConfig jdbcConfig = (JdbcPagingReaderConfig) config.getConfig();
             DataSource ds = context.getBean(jdbcConfig.getDatasource(), DataSource.class);
-            RowMapper<T> rowMapper = instantiateClass(jdbcConfig.getMappedClass(), RowMapper.class);
+            RowMapper<I> rowMapper = instantiateClass(jdbcConfig.getMappedClass(), RowMapper.class);
 
-            JdbcPagingItemReader<T> reader = new JdbcPagingItemReader<>();
+            JdbcPagingItemReader<I> reader = new JdbcPagingItemReader<>();
             reader.setName(config.getName());
             reader.setDataSource(ds);
             reader.setRowMapper(rowMapper);

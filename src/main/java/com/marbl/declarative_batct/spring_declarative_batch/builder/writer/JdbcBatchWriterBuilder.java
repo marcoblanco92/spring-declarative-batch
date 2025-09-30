@@ -16,14 +16,14 @@ import static com.marbl.declarative_batct.spring_declarative_batch.utils.Reflect
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class JdbcBatchWriterBuilder {
 
-    public static <T> JdbcBatchItemWriter<T> build(ComponentConfig config, ApplicationContext context) {
+    public static <O> JdbcBatchItemWriter<O> build(ComponentConfig config, ApplicationContext context) {
         try {
             JdbcBatchWriterConfig jdbcConfig = (JdbcBatchWriterConfig) config.getConfig();
             DataSource ds = context.getBean(jdbcConfig.getDatasource(), DataSource.class);
 
-            ItemPreparedStatementSetter<T> psSetter = instantiateClass(jdbcConfig.getPreparedStatementClass(), ItemPreparedStatementSetter.class);
+            ItemPreparedStatementSetter<O> psSetter = instantiateClass(jdbcConfig.getPreparedStatementClass(), ItemPreparedStatementSetter.class);
 
-            JdbcBatchItemWriter<T> writer = new JdbcBatchItemWriter<>();
+            JdbcBatchItemWriter<O> writer = new JdbcBatchItemWriter<>();
             writer.setDataSource(ds);
             writer.setSql(jdbcConfig.getSql());
             writer.setItemPreparedStatementSetter(psSetter);

@@ -12,10 +12,10 @@ import org.springframework.core.io.FileSystemResource;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class FlatFileWriterBuilder {
 
-    public static <T> FlatFileItemWriter<T> build(ComponentConfig config) {
+    public static <O> FlatFileItemWriter<O> build(ComponentConfig config) {
         try {
             FlatFileWriterConfig flatConfig = (FlatFileWriterConfig) config.getConfig();
-            FlatFileItemWriter<T> writer = new FlatFileItemWriter<>();
+            FlatFileItemWriter<O> writer = new FlatFileItemWriter<>();
             writer.setName(config.getName());
 
             writer.setResource(new FileSystemResource(flatConfig.getResource()));
@@ -29,10 +29,10 @@ public class FlatFileWriterBuilder {
                 writer.setFooterCallback(w -> w.write(flatConfig.getFileFooter()));
 
             // Line Aggregator
-            DelimitedLineAggregator<T> lineAggregator = new DelimitedLineAggregator<>();
+            DelimitedLineAggregator<O> lineAggregator = new DelimitedLineAggregator<>();
             lineAggregator.setDelimiter(flatConfig.getDelimiter());
 
-            BeanWrapperFieldExtractor<T> fieldExtractor = new BeanWrapperFieldExtractor<>();
+            BeanWrapperFieldExtractor<O> fieldExtractor = new BeanWrapperFieldExtractor<>();
             fieldExtractor.setNames(flatConfig.getFieldNames());
             lineAggregator.setFieldExtractor(fieldExtractor);
 

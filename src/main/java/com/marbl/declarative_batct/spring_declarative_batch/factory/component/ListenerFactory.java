@@ -1,8 +1,11 @@
 package com.marbl.declarative_batct.spring_declarative_batch.factory.component;
 
+import com.marbl.declarative_batct.spring_declarative_batch.exception.InvalidBeanException;
+import com.marbl.declarative_batct.spring_declarative_batch.exception.TypeNotSupportedException;
 import com.marbl.declarative_batct.spring_declarative_batch.model.support.ListenerConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.JobExecutionListener;
+import org.springframework.batch.core.StepListener;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -24,7 +27,7 @@ public class ListenerFactory {
      */
     public JobExecutionListener createJobListener(ListenerConfig config) {
         if (!StringUtils.hasText(config.getType())) {
-            throw new ListenerTypeNotSupportedException("Listener type must be provided");
+            throw new TypeNotSupportedException("Listener type must be provided");
         }
 
         if (!StringUtils.hasText(config.getName())) {
@@ -33,7 +36,7 @@ public class ListenerFactory {
 
         var bean = getBean(config.getName());
         if (!(bean instanceof JobExecutionListener listener)) {
-            throw new InvalidListenerBeanException(
+            throw new InvalidBeanException(
                     "Bean '" + config.getName() + "' does not implement JobExecutionListener"
             );
         }
@@ -44,10 +47,11 @@ public class ListenerFactory {
 
     /**
      * Create a Step listener from config or Spring context.
+     * Supports StepExecutionListener, ItemReadListener<I>, ItemProcessListener<I,O>, ItemWriteListener<O>.
      */
-    public Object createStepListener(ListenerConfig config) {
+    public StepListener createStepListener(ListenerConfig config) {
         if (!StringUtils.hasText(config.getType())) {
-            throw new ListenerTypeNotSupportedException("Listener type must be provided");
+            throw new TypeNotSupportedException("Listener type must be provided");
         }
 
         if (!StringUtils.hasText(config.getName())) {
@@ -58,33 +62,21 @@ public class ListenerFactory {
         var expectedType = resolveStepListenerClass(config.getType());
 
         if (!expectedType.isInstance(bean)) {
-            throw new InvalidListenerBeanException(
+            throw new InvalidBeanException(
                     "Bean '" + config.getName() + "' does not implement " + config.getType()
             );
         }
 
-        log.debug("Using Step listener bean '{}'", config.getName());
-        return bean;
+        log.debug("Using Step listener bean '{}' as {}", config.getName(), config.getType());
+        return (StepListener) bean;
     }
 
     // --- Helper method to retrieve Spring bean with validation ---
     private Object getBean(String beanName) {
         if (!context.containsBean(beanName)) {
-            throw new InvalidListenerBeanException("No bean found with name '" + beanName + "'");
+            throw new InvalidBeanException("No bean found with name '" + beanName + "'");
         }
         return context.getBean(beanName);
     }
 
-    // --- Custom exceptions ---
-    public static class ListenerTypeNotSupportedException extends RuntimeException {
-        public ListenerTypeNotSupportedException(String msg) {
-            super(msg);
-        }
-    }
-
-    public static class InvalidListenerBeanException extends RuntimeException {
-        public InvalidListenerBeanException(String msg) {
-            super(msg);
-        }
-    }
 }

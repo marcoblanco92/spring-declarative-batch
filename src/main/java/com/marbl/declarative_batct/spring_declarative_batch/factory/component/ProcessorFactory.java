@@ -1,35 +1,71 @@
 package com.marbl.declarative_batct.spring_declarative_batch.factory.component;
 
+import com.marbl.declarative_batct.spring_declarative_batch.exception.InvalidBeanException;
+import com.marbl.declarative_batct.spring_declarative_batch.exception.TypeNotSupportedException;
 import com.marbl.declarative_batct.spring_declarative_batch.model.support.ComponentConfig;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.support.PassThroughItemProcessor;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.util.Map;
-import java.util.function.BiFunction;
 
+@Slf4j
 @Component
-public class ProcessorFactory extends AbstractComponentFactory<ItemProcessor<?, ?>> {
+public class ProcessorFactory {
+
+    private final ApplicationContext context;
 
     private static final Map<String, Class<?>> PROCESSOR_TYPES = Map.of(
             "PassThroughItemProcessor", PassThroughItemProcessor.class,
             "ItemProcessor", ItemProcessor.class
     );
 
-    private static final Map<String, BiFunction<ComponentConfig, ApplicationContext, ItemProcessor<?, ?>>> BUILDER_MAP = Map.of(
-            "PassThroughItemProcessor", (config, ctx) -> item -> item
-    );
-
     public ProcessorFactory(ApplicationContext context) {
-        super(context);
+        this.context = context;
     }
 
-    public ItemProcessor<?, ?> createProcessor(ComponentConfig config) throws Exception {
-        var processor = createFromBean(config.getName(), config.getType(), PROCESSOR_TYPES);
-        if (processor != null) return processor;
+    /**
+     * Create a processor of type <I,O> based on config or Spring context.
+     */
+    @SuppressWarnings("unchecked")
+    public <I,O> ItemProcessor<I,O> createProcessor(ComponentConfig config) throws Exception {
 
-        return (ItemProcessor<?, ?>) createFromBuilder(config.getType(), BUILDER_MAP, config);
+        if (!StringUtils.hasText(config.getType())) {
+            throw new IllegalArgumentException("Processor type must be provided");
+        }
 
+        // 1️⃣ Try to load processor from Spring context
+        if (StringUtils.hasText(config.getName()) && context.containsBean(config.getName())) {
+            Object bean = context.getBean(config.getName());
+            if (!(bean instanceof ItemProcessor<?, ?> processorBean)) {
+                throw new InvalidBeanException("Bean '" + config.getName() + "' is not an ItemProcessor");
+            }
+            if (!isAllowedProcessor(processorBean, config.getType())) {
+                throw new InvalidBeanException(
+                        "Bean '" + config.getName() + "' does not match type '" + config.getType() + "'"
+                );
+            }
+            log.debug("Using existing processor bean '{}'", config.getName());
+            return (ItemProcessor<I,O>) processorBean;
+        }
+
+        // 2️⃣ Build a new processor using Java 17 switch expression
+        ItemProcessor<I,O> processor = switch(config.getType()) {
+            case "PassThroughItemProcessor" -> (ItemProcessor<I,O>) new PassThroughItemProcessor<I>();
+            // case "CustomProcessor" -> (ItemProcessor<I,O>) new CustomProcessor<I,O>();
+            default -> throw new TypeNotSupportedException("Unknown processor type: " + config.getType());
+        };
+
+        log.debug("Created new processor of type '{}'", config.getType());
+        return processor;
+    }
+
+    private boolean isAllowedProcessor(Object bean, String type) {
+        Class<?> expected = PROCESSOR_TYPES.get(type);
+        if (expected == null) throw new TypeNotSupportedException("Unknown processor type: " + type);
+        return expected.isInstance(bean);
     }
 }

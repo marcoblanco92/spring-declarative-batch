@@ -9,15 +9,15 @@ import com.marbl.declarative_batct.spring_declarative_batch.model.support.StepsC
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.*;
+import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.FaultTolerantStepBuilder;
 import org.springframework.batch.core.step.builder.SimpleStepBuilder;
-import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
 
 @Slf4j
 @Component
@@ -38,13 +38,13 @@ public class StepFactory {
      * This method uses the library factories to build reader/processor/writer and attaches listeners.
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public <I, O> Step createStep(StepsConfig config) throws Exception {
+    public <I,O> Step createStep(StepsConfig config) throws Exception {
         log.info("Creating step step '{}' ", config.getName());
 
         // --- create typed components using the library factories (they return raw types) ---
-        ItemReader<I> reader = (ItemReader<I>) readerFactory.createReader(config.getReader(), config.getChunk());
-        ItemProcessor<I, O> processor = (ItemProcessor<I, O>) processorFactory.createProcessor(config.getProcessor());
-        ItemWriter<O> writer = (ItemWriter<O>) writerFactory.createWriter(config.getWriter());
+        ItemReader<I> reader = readerFactory.createReader(config.getReader(), config.getChunk());
+        ItemProcessor<I, O> processor = processorFactory.createProcessor(config.getProcessor());
+        ItemWriter<O> writer = writerFactory.createWriter(config.getWriter());
 
         // --- build step with chunkStep and optional fault-tolerance ---
         StepBuilder stepBuilder = new StepBuilder(config.getName(), jobRepository);
