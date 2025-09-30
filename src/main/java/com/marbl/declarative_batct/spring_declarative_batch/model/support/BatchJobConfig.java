@@ -1,0 +1,28 @@
+package com.marbl.declarative_batct.spring_declarative_batch.model.support;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
+
+import java.util.List;
+
+@Data
+@Validated
+@ConfigurationProperties(prefix = "batch-job")
+public class BatchJobConfig {
+
+    @NotEmpty(message = "BatchJob name is required")
+    private String name;
+
+    private int chunkSize = 10;
+
+    @Valid
+    private ListenerConfig listener;
+
+    @Valid
+    @NotEmpty(message = "BatchJob must have at least one step")
+    private List<StepsConfig> steps;
+}
+
