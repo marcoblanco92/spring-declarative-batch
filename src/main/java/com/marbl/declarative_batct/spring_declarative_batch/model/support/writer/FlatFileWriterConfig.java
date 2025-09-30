@@ -10,7 +10,6 @@ public class FlatFileWriterConfig implements WriterConfig {
     private String resource;
 
     private String delimiter = ",";
-
     private int lineToSkip = 0;
 
     private String fileHeader;

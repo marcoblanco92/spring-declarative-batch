@@ -5,8 +5,7 @@ import com.marbl.declarative_batct.spring_declarative_batch.model.support.reader
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.springframework.batch.item.database.JdbcPagingItemReader;
-import org.springframework.batch.item.database.Order;
-import org.springframework.batch.item.database.support.MySqlPagingQueryProvider;
+import org.springframework.batch.item.database.PagingQueryProvider;
 import org.springframework.context.ApplicationContext;
 import org.springframework.jdbc.core.RowMapper;
 
@@ -17,9 +16,9 @@ import static com.marbl.declarative_batct.spring_declarative_batch.utils.Reflect
 
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class JdbcPagingReaderBuilding {
+public class JdbcPagingReaderBuilder {
 
-    public static <T> JdbcPagingItemReader<T> build(ComponentConfig config, ApplicationContext context) {
+    public static <T> JdbcPagingItemReader<T> build(ComponentConfig config, ApplicationContext context, int chunk) {
         try {
             JdbcPagingReaderConfig jdbcConfig = (JdbcPagingReaderConfig) config.getConfig();
             DataSource ds = context.getBean(jdbcConfig.getDatasource(), DataSource.class);
@@ -29,19 +28,12 @@ public class JdbcPagingReaderBuilding {
             reader.setName(config.getName());
             reader.setDataSource(ds);
             reader.setRowMapper(rowMapper);
-            reader.setPageSize(context.getEnvironment().getProperty("batch-job.chunkSize", Integer.class, 10));
+            reader.setPageSize(chunk);
 
-            // Build paging query provider (vendor-specific, here MySQL)
-            MySqlPagingQueryProvider queryProvider = new MySqlPagingQueryProvider();
-            queryProvider.setSelectClause(jdbcConfig.getSelectClause());
-            queryProvider.setFromClause(jdbcConfig.getFromClause());
-            queryProvider.setWhereClause(jdbcConfig.getWhereClause());
+            PagingQueryProvider queryProvider = jdbcConfig.getProviderType().create(jdbcConfig);
+            reader.setQueryProvider(queryProvider);
 
-            // Sorting is mandatory for deterministic paging
-            Map<String, Order> sortKeys = jdbcConfig.getSortKeys();
-            queryProvider.setSortKeys(sortKeys);
-
-            Map<String,Object> parameters = jdbcConfig.getParameters();
+            Map<String, Object> parameters = jdbcConfig.getParameters();
             reader.setParameterValues(parameters);
             reader.afterPropertiesSet();
 

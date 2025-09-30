@@ -25,7 +25,6 @@ public class JdbcBatchWriterBuilder {
 
             JdbcBatchItemWriter<T> writer = new JdbcBatchItemWriter<>();
             writer.setDataSource(ds);
-            writer.setAssertUpdates(false);
             writer.setSql(jdbcConfig.getSql());
             writer.setItemPreparedStatementSetter(psSetter);
 

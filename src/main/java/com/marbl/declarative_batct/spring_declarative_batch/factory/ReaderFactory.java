@@ -3,7 +3,7 @@ package com.marbl.declarative_batct.spring_declarative_batch.factory;
 
 import com.marbl.declarative_batct.spring_declarative_batch.builder.reader.FlatFileReaderBuilder;
 import com.marbl.declarative_batct.spring_declarative_batch.builder.reader.JdbcCursorReaderBuilder;
-import com.marbl.declarative_batct.spring_declarative_batch.builder.reader.JdbcPagingReaderBuilding;
+import com.marbl.declarative_batct.spring_declarative_batch.builder.reader.JdbcPagingReaderBuilder;
 import com.marbl.declarative_batct.spring_declarative_batch.model.support.ComponentConfig;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
@@ -21,7 +21,7 @@ public class ReaderFactory {
         this.context = context;
     }
 
-    public ItemReader<?> createReader(ComponentConfig config) throws Exception {
+    public ItemReader<?> createReader(ComponentConfig config, int chunk) throws Exception {
 
         if (!StringUtils.hasText(config.getType())) {
             throw new IllegalArgumentException("Reader type must be provided");
@@ -45,7 +45,7 @@ public class ReaderFactory {
 
         return switch (config.getType()) {
             case "JdbcCursorItemReader" -> JdbcCursorReaderBuilder.build(config, this.context);
-            case "JdbcPagingItemReader" -> JdbcPagingReaderBuilding.build(config,this.context);
+            case "JdbcPagingItemReader" -> JdbcPagingReaderBuilder.build(config,this.context, chunk);
             case "FlatFileItemReader" -> FlatFileReaderBuilder.build(config);
             // aggiungi altri tipi qui
             default -> throw new IllegalArgumentException("Unknown reader type: " + config.getType());

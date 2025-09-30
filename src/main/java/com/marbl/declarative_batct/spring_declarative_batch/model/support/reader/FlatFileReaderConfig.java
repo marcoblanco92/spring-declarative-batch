@@ -10,10 +10,10 @@ public class FlatFileReaderConfig implements ReaderConfig {
     private String resource;
 
     private String delimiter = ",";
-    private int lineToSkip= 0;
+    private int lineToSkip = 0;
 
     @NotBlank(message = "FieldsNames is required")
-    private String fieldNames;
+    private String[] fieldNames;
 
     @NotBlank(message = "mappedClass is required")
     private String mappedClass;

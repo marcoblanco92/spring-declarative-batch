@@ -4,16 +4,17 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.marbl.declarative_batct.spring_declarative_batch.model.support.AdditionalConfig;
 
-// Base interface per Reader
+// Base interface for Reader
 @JsonTypeInfo(
-        use = JsonTypeInfo.Id.NAME,       // discriminatore basato sul nome
-        include = JsonTypeInfo.As.EXTERNAL_PROPERTY, // legge il type fuori da "configs"
-        property = "type"                 // legge "type" dallo YAML
+        use = JsonTypeInfo.Id.NAME,       // type discriminator based on the class name
+        include = JsonTypeInfo.As.EXTERNAL_PROPERTY, // reads the type from outside "configs"
+        property = "type"                 // reads "type" from the YAML
 )
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = JdbcCursorReaderConfig.class, name = "JdbcCursorReaderConfig"),
-        @JsonSubTypes.Type(value = FlatFileReaderConfig.class, name = "FlatFileReaderConfig"),
-        @JsonSubTypes.Type(value = JdbcPagingReaderConfig.class, name = "JdbcPagingReaderConfig")
+        @JsonSubTypes.Type(value = JdbcCursorReaderConfig.class, name = "JdbcCursorItemReader"),
+        @JsonSubTypes.Type(value = FlatFileReaderConfig.class, name = "FlatFileItemReader"),
+        @JsonSubTypes.Type(value = JdbcPagingReaderConfig.class, name = "JdbcPagingItemReader")
 })
 public interface ReaderConfig extends AdditionalConfig {
 }
+

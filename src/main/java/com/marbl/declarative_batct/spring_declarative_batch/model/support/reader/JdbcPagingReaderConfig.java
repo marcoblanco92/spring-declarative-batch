@@ -1,5 +1,6 @@
 package com.marbl.declarative_batct.spring_declarative_batch.model.support.reader;
 
+import com.marbl.declarative_batct.spring_declarative_batch.enums.PagingProviderType;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import org.springframework.batch.item.database.Order;
@@ -17,6 +18,9 @@ public class JdbcPagingReaderConfig implements ReaderConfig {
 
     @NotBlank(message = "PreparedStatementClass is required")
     private String preparedStatementClass;
+
+    @NotBlank(message = "ProviderType is required")
+    private PagingProviderType providerType;
 
     @NotBlank(message = "MappedClass is require")
     private String mappedClass;

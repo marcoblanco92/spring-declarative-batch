@@ -1,7 +1,9 @@
 package com.marbl.declarative_batct.spring_declarative_batch.model.support.writer;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 @Data
 public class JdbcBatchWriterConfig {
@@ -14,5 +16,4 @@ public class JdbcBatchWriterConfig {
 
     @NotBlank(message = "PreparedStatementClass is required")
     private String preparedStatementClass;
-
 }

@@ -19,7 +19,6 @@ public class FlatFileWriterBuilder {
             writer.setName(config.getName());
 
             writer.setResource(new FileSystemResource(flatConfig.getResource()));
-            writer.setLineSeparator(flatConfig.getDelimiter());
             writer.setAppendAllowed(true);
 
             //Header

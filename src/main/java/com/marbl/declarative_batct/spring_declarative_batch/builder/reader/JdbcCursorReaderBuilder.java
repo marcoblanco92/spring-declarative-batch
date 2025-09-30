@@ -3,6 +3,7 @@ package com.marbl.declarative_batct.spring_declarative_batch.builder.reader;
 
 import com.marbl.declarative_batct.spring_declarative_batch.model.support.ComponentConfig;
 import com.marbl.declarative_batct.spring_declarative_batch.model.support.reader.JdbcCursorReaderConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.utils.ReflectionUtils;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
@@ -13,8 +14,6 @@ import org.springframework.jdbc.core.RowMapper;
 
 import javax.sql.DataSource;
 
-import static com.marbl.declarative_batct.spring_declarative_batch.utils.ReflectionUtils.instantiateClass;
-
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class JdbcCursorReaderBuilder {
@@ -22,15 +21,13 @@ public class JdbcCursorReaderBuilder {
     public static <T> JdbcCursorItemReader<T> build(ComponentConfig config, ApplicationContext context) {
         try {
             JdbcCursorReaderConfig jdbcConfig = (JdbcCursorReaderConfig) config.getConfig();
+
             DataSource ds = context.getBean(jdbcConfig.getDatasource(), DataSource.class);
 
-            // Load RowMapper class via reflection
-            RowMapper<T> rowMapper = instantiateClass(jdbcConfig.getMappedClass(), RowMapper.class);
+            // Instantiate RowMapper and PreparedStatementSetter via ReflectionUtils
+            RowMapper<T> rowMapper = ReflectionUtils.instantiateClass(jdbcConfig.getMappedClass(), RowMapper.class);
+            PreparedStatementSetter psSetter = ReflectionUtils.instantiateClass(jdbcConfig.getPreparedStatementClass(), PreparedStatementSetter.class);
 
-            // Load PreparedStatementSetter class via reflection
-            PreparedStatementSetter psSetter = instantiateClass(jdbcConfig.getPreparedStatementClass(), PreparedStatementSetter.class);
-
-            // Use builder instead of direct setters for better readability
             return new JdbcCursorItemReaderBuilder<T>()
                     .name(config.getName())
                     .dataSource(ds)
