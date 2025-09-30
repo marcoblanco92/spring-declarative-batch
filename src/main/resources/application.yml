@@ -4,6 +4,7 @@ batch-job:
     type: JobExecutionListener
   steps:
     - name: step1
+      chunk: 15
       reader:                 # Reader lato step
         name: userJdbcReader
         type: JdbcCursorItemReader

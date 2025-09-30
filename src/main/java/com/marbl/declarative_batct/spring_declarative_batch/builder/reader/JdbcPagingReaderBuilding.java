@@ -1,7 +1,7 @@
 package com.marbl.declarative_batct.spring_declarative_batch.builder.reader;
 
-import com.marbl.bulk.com_marbl_bulk_v2.model.support.ComponentConfig;
-import com.marbl.bulk.com_marbl_bulk_v2.model.support.reader.JdbcPagingReaderConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.model.support.ComponentConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.model.support.reader.JdbcPagingReaderConfig;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.springframework.batch.item.database.JdbcPagingItemReader;
@@ -13,7 +13,8 @@ import org.springframework.jdbc.core.RowMapper;
 import javax.sql.DataSource;
 import java.util.Map;
 
-import static com.marbl.bulk.com_marbl_bulk_v2.utils.ReflectionUtils.instantiateClass;
+import static com.marbl.declarative_batct.spring_declarative_batch.utils.ReflectionUtils.instantiateClass;
+
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class JdbcPagingReaderBuilding {

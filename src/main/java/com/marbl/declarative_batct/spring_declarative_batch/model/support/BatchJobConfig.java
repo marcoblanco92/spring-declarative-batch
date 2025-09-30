@@ -16,8 +16,6 @@ public class BatchJobConfig {
     @NotEmpty(message = "BatchJob name is required")
     private String name;
 
-    private int chunkSize = 10;
-
     @Valid
     private ListenerConfig listener;
 

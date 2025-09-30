@@ -1,7 +1,8 @@
 package com.marbl.declarative_batct.spring_declarative_batch.builder.reader;
 
-import com.marbl.bulk.com_marbl_bulk_v2.model.support.ComponentConfig;
-import com.marbl.bulk.com_marbl_bulk_v2.model.support.reader.FlatFileReaderConfig;
+
+import com.marbl.declarative_batct.spring_declarative_batch.model.support.ComponentConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.model.support.reader.FlatFileReaderConfig;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.springframework.batch.item.file.FlatFileItemReader;
@@ -47,5 +48,4 @@ public class FlatFileReaderBuilder {
             );
         }
     }
-
 }

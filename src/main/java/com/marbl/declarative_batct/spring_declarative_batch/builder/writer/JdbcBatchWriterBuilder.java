@@ -1,7 +1,7 @@
 package com.marbl.declarative_batct.spring_declarative_batch.builder.writer;
 
-import com.marbl.bulk.com_marbl_bulk_v2.model.support.ComponentConfig;
-import com.marbl.bulk.com_marbl_bulk_v2.model.support.writer.JdbcBatchWriterConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.model.support.ComponentConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.model.support.writer.JdbcBatchWriterConfig;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.springframework.batch.item.database.ItemPreparedStatementSetter;
@@ -10,7 +10,8 @@ import org.springframework.context.ApplicationContext;
 
 import javax.sql.DataSource;
 
-import static com.marbl.bulk.com_marbl_bulk_v2.utils.ReflectionUtils.instantiateClass;
+import static com.marbl.declarative_batct.spring_declarative_batch.utils.ReflectionUtils.instantiateClass;
+
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class JdbcBatchWriterBuilder {

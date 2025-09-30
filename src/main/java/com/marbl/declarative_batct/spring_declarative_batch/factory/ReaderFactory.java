@@ -1,9 +1,10 @@
 package com.marbl.declarative_batct.spring_declarative_batch.factory;
 
-import com.marbl.bulk.com_marbl_bulk_v2.builder.reader.FlatFileReaderBuilder;
-import com.marbl.bulk.com_marbl_bulk_v2.builder.reader.JdbcCursorReaderBuilder;
-import com.marbl.bulk.com_marbl_bulk_v2.builder.reader.JdbcPagingReaderBuilding;
-import com.marbl.bulk.com_marbl_bulk_v2.model.support.ComponentConfig;
+
+import com.marbl.declarative_batct.spring_declarative_batch.builder.reader.FlatFileReaderBuilder;
+import com.marbl.declarative_batct.spring_declarative_batch.builder.reader.JdbcCursorReaderBuilder;
+import com.marbl.declarative_batct.spring_declarative_batch.builder.reader.JdbcPagingReaderBuilding;
+import com.marbl.declarative_batct.spring_declarative_batch.model.support.ComponentConfig;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.batch.item.file.FlatFileItemReader;

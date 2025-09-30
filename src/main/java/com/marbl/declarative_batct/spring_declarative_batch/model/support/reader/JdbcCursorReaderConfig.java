@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
-public class JdbcReaderConfig implements ReaderConfig {
+public class JdbcCursorReaderConfig implements ReaderConfig {
 
     @NotBlank(message = "Datasource is required")
     private String datasource;

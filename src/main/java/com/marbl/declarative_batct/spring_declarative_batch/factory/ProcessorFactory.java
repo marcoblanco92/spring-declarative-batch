@@ -1,6 +1,6 @@
 package com.marbl.declarative_batct.spring_declarative_batch.factory;
 
-import com.marbl.bulk.com_marbl_bulk_v2.model.support.ComponentConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.model.support.ComponentConfig;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.support.PassThroughItemProcessor;
 import org.springframework.context.ApplicationContext;
@@ -53,20 +53,22 @@ public class ProcessorFactory {
      */
     private ItemProcessor<?, ?> createByType(String type) {
         switch (type) {
-            case "PassThroughItemProcessor" -> {return item -> item;}
+            case "PassThroughItemProcessor" -> {
+                return item -> item;
+            }
             default -> throw new IllegalArgumentException("Unknown processor type: " + type);
         }
     }
 
 
-        /**
-         * Bean type check
-         */
-        private boolean isAllowedProcessor (Object bean, String type){
-            return switch (type) {
-                case "PassThroughItemProcessor" -> bean instanceof PassThroughItemProcessor;
-                case "ItemProcessor" -> bean instanceof ItemProcessor;
-                default -> throw new IllegalArgumentException("Unknown processor type: " + type);
-            };
-        }
+    /**
+     * Bean type check
+     */
+    private boolean isAllowedProcessor(Object bean, String type) {
+        return switch (type) {
+            case "PassThroughItemProcessor" -> bean instanceof PassThroughItemProcessor;
+            case "ItemProcessor" -> bean instanceof ItemProcessor;
+            default -> throw new IllegalArgumentException("Unknown processor type: " + type);
+        };
     }
+}

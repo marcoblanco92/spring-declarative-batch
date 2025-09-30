@@ -1,12 +1,13 @@
 package com.marbl.declarative_batct.spring_declarative_batch.factory;
 
-import com.marbl.bulk.com_marbl_bulk_v2.model.support.ListenerConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.model.support.ListenerConfig;
 import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import static com.marbl.bulk.com_marbl_bulk_v2.utils.ListenerUtils.resolveStepListenerClass;
+import static com.marbl.declarative_batct.spring_declarative_batch.utils.ListenerUtils.resolveStepListenerClass;
+
 
 @Component
 public class ListenerFactory {

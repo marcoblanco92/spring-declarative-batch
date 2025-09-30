@@ -1,7 +1,7 @@
 package com.marbl.declarative_batct.spring_declarative_batch.builder.writer;
 
-import com.marbl.bulk.com_marbl_bulk_v2.model.support.ComponentConfig;
-import com.marbl.bulk.com_marbl_bulk_v2.model.support.writer.FlatFileWriterConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.model.support.ComponentConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.model.support.writer.FlatFileWriterConfig;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.springframework.batch.item.file.FlatFileItemWriter;

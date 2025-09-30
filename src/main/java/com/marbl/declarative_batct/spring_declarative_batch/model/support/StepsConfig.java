@@ -13,6 +13,7 @@ public class StepsConfig {
 
     @NotBlank(message = "Step name is required")
     private String name;
+    private int chunk = 10;
     @Valid
     @NotNull(message = "Reader is required")
     private ComponentConfig reader;

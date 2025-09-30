@@ -2,9 +2,8 @@ package com.marbl.declarative_batct.spring_declarative_batch.model.support.write
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.marbl.bulk.com_marbl_bulk_v2.model.support.AdditionalConfig;
-import com.marbl.bulk.com_marbl_bulk_v2.model.support.reader.FlatFileReaderConfig;
-import com.marbl.bulk.com_marbl_bulk_v2.model.support.reader.JdbcReaderConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.model.support.AdditionalConfig;
+
 
 // Base interface per Reader
 @JsonTypeInfo(
@@ -13,8 +12,8 @@ import com.marbl.bulk.com_marbl_bulk_v2.model.support.reader.JdbcReaderConfig;
         property = "type"                 // legge "type" dallo YAML
 )
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = JdbcReaderConfig.class, name = "JdbcReaderConfig"),
-        @JsonSubTypes.Type(value = FlatFileReaderConfig.class, name = "FlatFileReaderConfig")
+        @JsonSubTypes.Type(value = JdbcBatchWriterConfig.class, name = "JdbcBatchWriterConfig"),
+        @JsonSubTypes.Type(value = FlatFileWriterConfig.class, name = "FlatFileWriterConfig")
 })
 public interface WriterConfig extends AdditionalConfig {
 }
