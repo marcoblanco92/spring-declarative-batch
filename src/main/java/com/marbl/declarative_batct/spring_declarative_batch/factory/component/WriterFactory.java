@@ -1,4 +1,4 @@
-package com.marbl.declarative_batct.spring_declarative_batch.factory;
+package com.marbl.declarative_batct.spring_declarative_batch.factory.component;
 
 import com.marbl.declarative_batct.spring_declarative_batch.builder.writer.FlatFileWriterBuilder;
 import com.marbl.declarative_batct.spring_declarative_batch.builder.writer.JdbcBatchWriterBuilder;

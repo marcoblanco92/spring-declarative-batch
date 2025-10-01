@@ -30,6 +30,9 @@ public class StepsConfig {
     @Valid
     private List<ListenerConfig> listeners;
 
+    private RetryConfig retry;
+    private SkipConfig skip;
+
 
     private String next;
     @Valid

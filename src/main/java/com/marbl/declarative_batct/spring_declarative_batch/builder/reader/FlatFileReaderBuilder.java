@@ -18,11 +18,11 @@ import org.springframework.core.io.Resource;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class FlatFileReaderBuilder {
 
-    public static <T> FlatFileItemReader<T> build(ComponentConfig config) {
+    public static <I> FlatFileItemReader<I> build(ComponentConfig config) {
         try {
             FlatFileReaderConfig flatConfig = (FlatFileReaderConfig) config.getConfig();
 
-            FlatFileItemReader<T> reader = new FlatFileItemReader<>();
+            FlatFileItemReader<I> reader = new FlatFileItemReader<>();
             reader.setName(config.getName());
 
             Resource resource = ResourceUtils.resolveResource(flatConfig.getResource());
@@ -30,13 +30,13 @@ public class FlatFileReaderBuilder {
             reader.setLinesToSkip(flatConfig.getLineToSkip());
 
             // --- Configure LineMapper ---
-            DefaultLineMapper<T> lineMapper = new DefaultLineMapper<>();
+            DefaultLineMapper<I> lineMapper = new DefaultLineMapper<>();
 
             DelimitedLineTokenizer tokenizer = new DelimitedLineTokenizer();
             tokenizer.setDelimiter(flatConfig.getDelimiter());
             tokenizer.setNames(flatConfig.getFieldNames());
 
-            BeanWrapperFieldSetMapper<T> fieldSetMapper = new BeanWrapperFieldSetMapper<>();
+            BeanWrapperFieldSetMapper<I> fieldSetMapper = new BeanWrapperFieldSetMapper<>();
             fieldSetMapper.setTargetType(ReflectionUtils.instantiateClass(flatConfig.getMappedClass(), Class.class));
 
             lineMapper.setLineTokenizer(tokenizer);

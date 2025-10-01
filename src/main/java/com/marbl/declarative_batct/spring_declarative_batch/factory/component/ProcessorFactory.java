@@ -1,4 +1,4 @@
-package com.marbl.declarative_batct.spring_declarative_batch.factory;
+package com.marbl.declarative_batct.spring_declarative_batch.factory.component;
 
 import com.marbl.declarative_batct.spring_declarative_batch.model.support.ComponentConfig;
 import org.springframework.batch.item.ItemProcessor;
@@ -29,7 +29,7 @@ public class ProcessorFactory extends AbstractComponentFactory<ItemProcessor<?, 
         var processor = createFromBean(config.getName(), config.getType(), PROCESSOR_TYPES);
         if (processor != null) return processor;
 
-        return createFromBuilder(config.getType(), BUILDER_MAP, config);
+        return (ItemProcessor<?, ?>) createFromBuilder(config.getType(), BUILDER_MAP, config);
 
     }
 }

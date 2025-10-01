@@ -1,4 +1,4 @@
-package com.marbl.declarative_batct.spring_declarative_batch.factory;
+package com.marbl.declarative_batct.spring_declarative_batch.factory.component;
 
 import com.marbl.declarative_batct.spring_declarative_batch.builder.reader.FlatFileReaderBuilder;
 import com.marbl.declarative_batct.spring_declarative_batch.builder.reader.JdbcCursorReaderBuilder;
@@ -11,7 +11,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
-import java.util.function.BiFunction;
 
 @Component
 public class ReaderFactory extends AbstractComponentFactory<ItemReader<?>> {
