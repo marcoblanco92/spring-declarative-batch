@@ -1,5 +1,6 @@
 package com.marbl.declarative_batct.spring_declarative_batch.factory.step;
 
+import com.marbl.declarative_batct.spring_declarative_batch.exception.InvalidBeanException;
 import com.marbl.declarative_batct.spring_declarative_batch.factory.component.ListenerFactory;
 import com.marbl.declarative_batct.spring_declarative_batch.factory.component.ProcessorFactory;
 import com.marbl.declarative_batct.spring_declarative_batch.factory.component.ReaderFactory;
@@ -38,21 +39,51 @@ public class StepFactory {
      * This method uses the library factories to build reader/processor/writer and attaches listeners.
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public <I,O> Step createStep(StepsConfig config) throws Exception {
+    public <I, O> Step createStep(StepsConfig config, ItemReader<I> reader,
+                                  ItemProcessor<I, O> processor,
+                                  ItemWriter<O> writer) throws Exception {
         log.info("Creating step step '{}' ", config.getName());
 
+        // --- Validate components passed by Steplet against YAML config ---
+        if (reader != null && !readerFactory.isAllowedReader(reader, config.getReader().getType())) {
+            throw new InvalidBeanException(
+                    "Reader passed from Steplet does not match YAML type: expected " + config.getReader().getType()
+            );
+        }
+
+        if (processor != null && !processorFactory.isAllowedProcessor(processor, config.getProcessor().getType())) {
+            throw new InvalidBeanException(
+                    "Processor passed from Steplet does not match YAML type: expected " + config.getProcessor().getType()
+            );
+        }
+
+        if (writer != null && !writerFactory.isAllowedWriter(writer, config.getWriter().getType())) {
+            throw new InvalidBeanException(
+                    "Writer passed from Steplet does not match YAML type: expected " + config.getWriter().getType()
+            );
+        }
+
+
         // --- create typed components using the library factories (they return raw types) ---
-        ItemReader<I> reader = readerFactory.createReader(config.getReader(), config.getChunk());
-        ItemProcessor<I, O> processor = processorFactory.createProcessor(config.getProcessor());
-        ItemWriter<O> writer = writerFactory.createWriter(config.getWriter());
+        ItemReader<I> finalReader = reader != null
+                ? reader
+                : readerFactory.createReader(config.getReader(), config.getChunk());
+
+        ItemProcessor<I, O> finalProcessor = processor != null
+                ? processor
+                : processorFactory.createProcessor(config.getProcessor());
+
+        ItemWriter<O> finalWriter = writer != null
+                ? writer
+                : writerFactory.createWriter(config.getWriter());
 
         // --- build step with chunkStep and optional fault-tolerance ---
         StepBuilder stepBuilder = new StepBuilder(config.getName(), jobRepository);
         SimpleStepBuilder<I, O> chunkStep = stepBuilder
                 .<I, O>chunk(config.getChunk(), transactionManager)
-                .reader(reader)
-                .processor(processor)
-                .writer(writer);
+                .reader(finalReader)
+                .processor(finalProcessor)
+                .writer(finalWriter);
 
         // --- Attach listeners ---
         if (config.getListeners() != null) {
@@ -89,7 +120,7 @@ public class StepFactory {
         }
 
         // --- Fault-tolerance: retry & skip ---
-        if (config.getRetry() != null || config.getSkip() != null) {
+        if (config.getRetry() != null || config.getSkip() != null || config.getTransaction() != null) {
             FaultTolerantStepBuilder<I, O> faultStep = chunkStep.faultTolerant();
 
             // Retry configuration
@@ -109,16 +140,39 @@ public class StepFactory {
             // Skip configuration
             if (config.getSkip() != null) {
                 faultStep.skipLimit(config.getSkip().getLimit());
-                if (config.getSkip().getExceptions() != null) {
-                    for (Class<? extends Throwable> ex : config.getSkip().getExceptions()) {
+                if (config.getSkip().getExceptionsToSkip() != null) {
+                    for (Class<? extends Throwable> ex : config.getSkip().getExceptionsToSkip()) {
                         faultStep.skip(ex);
                     }
                 }
-                log.info("Configured skip for step '{}': limit={}, exceptions={}",
+                if (config.getSkip().getExceptionsNoSkip() != null) {
+                    for (Class<? extends Throwable> ex : config.getSkip().getExceptionsNoSkip()) {
+                        faultStep.noSkip(ex);
+                    }
+                }
+                log.info("Configured skip for step '{}': limit={}, exceptions={}, noSkipExceptions={}",
                         config.getName(),
                         config.getSkip().getLimit(),
-                        config.getSkip().getExceptions());
+                        config.getSkip().getExceptionsToSkip(),
+                        config.getSkip().getExceptionsNoSkip());
             }
+
+            // Rollback configuration
+            if (config.getTransaction() != null) {
+                if (config.getTransaction().getNoRollbackExceptions() != null) {
+                    for (Class<? extends Throwable> ex : config.getTransaction().getNoRollbackExceptions()) {
+                        faultStep.noRollback(ex);
+                    }
+                }
+                if (config.getTransaction().isReaderInTransaction()) {
+                    faultStep.readerIsTransactionalQueue();
+                }
+                log.info("Configured no rollback for step '{}': noRollbackExceptions={}, isReaderInTransactionQueue={}",
+                        config.getName(),
+                        config.getTransaction().getNoRollbackExceptions(),
+                        config.getTransaction().isReaderInTransaction());
+            }
+
 
             chunkStep = faultStep; // reassign for chaining listeners
         }

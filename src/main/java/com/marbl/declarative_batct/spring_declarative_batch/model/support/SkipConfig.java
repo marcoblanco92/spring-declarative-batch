@@ -6,6 +6,7 @@ import java.util.List;
 
 @Data
 public class SkipConfig {
-    private int limit = 5; // default skip limit
-    private List<Class<? extends Throwable>> exceptions; // exceptions to skip
+    private int limit = 10; // default skip limit
+    private List<Class<? extends Throwable>> exceptionsToSkip; // exceptions to skip
+    private List<Class<? extends Throwable>> exceptionsNoSkip; // exceptions to  no skip
 }

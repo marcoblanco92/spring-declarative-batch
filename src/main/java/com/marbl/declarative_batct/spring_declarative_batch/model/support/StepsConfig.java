@@ -32,11 +32,12 @@ public class StepsConfig {
 
     private RetryConfig retry;
     private SkipConfig skip;
+    private TransactionConfig transaction;
 
 
     private String next;
     @Valid
-    private List<StepTransitionConfig> transitions;
+    private List<StepConditionConfig> transitions;
 
     // --- Validation for next/transitions ---
     @AssertTrue(message = "You cannot set both 'next' and 'transitions' at the same time")

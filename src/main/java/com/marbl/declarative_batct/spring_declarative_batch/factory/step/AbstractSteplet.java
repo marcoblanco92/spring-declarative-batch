@@ -16,18 +16,23 @@ public abstract class AbstractSteplet<I, O> {
     @Setter
     private StepsConfig config;
 
+    public Step buildStep() throws Exception {
+        return stepFactory.createStep(
+                getConfig(),
+                reader(),
+                processor(),
+                writer()
+        );
+    }
+
+    protected ItemReader<I> reader() { return null; }
+    protected ItemProcessor<I, O> processor() { return null; }
+    protected ItemWriter<O> writer() { return null; }
 
     protected StepsConfig getConfig() {
         if (config == null) throw new IllegalStateException("StepsConfig not set");
         return config;
     }
-
-    public Step buildStep() throws Exception {
-        return stepFactory.<I, O>createStep(getConfig());
-    }
-
-//    protected abstract ItemReader<I> reader();
-//    protected abstract ItemProcessor<I,O> processor();
-//    protected abstract ItemWriter<O> writer();
-
 }
+
+

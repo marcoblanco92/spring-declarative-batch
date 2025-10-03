@@ -1,10 +1,10 @@
 package com.marbl.declarative_batct.spring_declarative_batch.factory.job;
 
+import com.marbl.declarative_batct.spring_declarative_batch.annotation.BulkBatchSteplet;
 import com.marbl.declarative_batct.spring_declarative_batch.factory.step.AbstractSteplet;
-import com.marbl.declarative_batct.spring_declarative_batch.factory.step.StepFactory;
 import com.marbl.declarative_batct.spring_declarative_batch.model.support.BatchJobConfig;
 import com.marbl.declarative_batct.spring_declarative_batch.model.support.ListenerConfig;
-import com.marbl.declarative_batct.spring_declarative_batch.model.support.StepTransitionConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.model.support.StepConditionConfig;
 import com.marbl.declarative_batct.spring_declarative_batch.model.support.StepsConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,14 +40,29 @@ public class JobFactory {
 
         log.info("Creating job '{}'", jobConfig.getName());
 
+        // --- Create map for unused step ---
+        Map<String, AbstractSteplet<?, ?>> usedSteplets = new HashMap<>();
+
+
         // --- Create all steps using steplet beans ---
         Map<String, Step> stepsMap = new HashMap<>();
         for (StepsConfig stepConfig : jobConfig.getSteps()) {
-            AbstractSteplet<?, ?> steplet = resolveSteplet(stepConfig);
+            AbstractSteplet<?, ?> steplet = resolveStepletBean(stepConfig);
             steplet.setConfig(stepConfig);
             Step step = steplet.buildStep();
             stepsMap.put(stepConfig.getName(), step);
+            usedSteplets.put(stepConfig.getName(), steplet);
             log.info("Step '{}' created via steplet '{}'", stepConfig.getName(), steplet.getClass().getSimpleName());
+        }
+
+        // --- Check for unused annotated steplet beans ---
+        Map<String, Object> allAnnotatedBeans = context.getBeansWithAnnotation(BulkBatchSteplet.class);
+        for (Object bean : allAnnotatedBeans.values()) {
+            BulkBatchSteplet ann = bean.getClass().getAnnotation(BulkBatchSteplet.class);
+            if (!usedSteplets.containsKey(ann.name())) {
+                log.warn("Annotated steplet bean '{}' ({}) is not used in any YAML step",
+                        ann.name(), bean.getClass().getSimpleName());
+            }
         }
 
         // --- Initialize JobBuilder with first step ---
@@ -61,7 +76,7 @@ public class JobFactory {
 
             // Conditional transitions
             if (stepConfig.getTransitions() != null && !stepConfig.getTransitions().isEmpty()) {
-                for (StepTransitionConfig transition : stepConfig.getTransitions()) {
+                for (StepConditionConfig transition : stepConfig.getTransitions()) {
                     Step nextStep = stepsMap.get(transition.getToStep());
                     if (nextStep == null) {
                         throw new IllegalArgumentException("Transition references unknown step: " + transition.getToStep());
@@ -113,10 +128,18 @@ public class JobFactory {
     /**
      * Resolve AbstractSteplet bean from Spring context using the step name
      */
-    private AbstractSteplet<?, ?> resolveSteplet(StepsConfig config) {
-        if (!context.containsBean(config.getName())) {
-            throw new IllegalArgumentException("No steplet bean found for name: " + config.getName());
+    private AbstractSteplet<?, ?> resolveStepletBean(StepsConfig config) {
+        Map<String, Object> beans = context.getBeansWithAnnotation(BulkBatchSteplet.class);
+        for (Object bean : beans.values()) {
+            BulkBatchSteplet ann = bean.getClass().getAnnotation(BulkBatchSteplet.class);
+            if (config.getName().equals(ann.name())) {
+                if (!(bean instanceof AbstractSteplet<?, ?>)) {
+                    throw new IllegalStateException("Bean annotated with @BulkBatchSteplet must extend AbstractSteplet: " + bean.getClass());
+                }
+                return (AbstractSteplet<?, ?>) bean;
+            }
         }
-        return context.getBean(config.getName(), AbstractSteplet.class);
+        throw new IllegalArgumentException("No steplet bean found for step name: " + config.getName());
     }
+
 }

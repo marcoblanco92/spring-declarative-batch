@@ -3,7 +3,6 @@ package com.marbl.declarative_batct.spring_declarative_batch.factory.component;
 import com.marbl.declarative_batct.spring_declarative_batch.builder.reader.FlatFileReaderBuilder;
 import com.marbl.declarative_batct.spring_declarative_batch.builder.reader.JdbcCursorReaderBuilder;
 import com.marbl.declarative_batct.spring_declarative_batch.builder.reader.JdbcPagingReaderBuilder;
-import com.marbl.declarative_batct.spring_declarative_batch.exception.InvalidBeanException;
 import com.marbl.declarative_batct.spring_declarative_batch.exception.TypeNotSupportedException;
 import com.marbl.declarative_batct.spring_declarative_batch.model.support.ComponentConfig;
 import lombok.extern.slf4j.Slf4j;
@@ -45,21 +44,6 @@ public class ReaderFactory {
             throw new IllegalArgumentException("Reader type must be provided");
         }
 
-        // 1️⃣ Try to load reader from Spring context
-        if (StringUtils.hasText(config.getName()) && context.containsBean(config.getName())) {
-            Object bean = context.getBean(config.getName());
-            if (!(bean instanceof ItemReader<?> readerBean)) {
-                throw new InvalidBeanException("Bean '" + config.getName() + "' is not an ItemReader");
-            }
-            if (!isAllowedReader(readerBean, config.getType())) {
-                throw new InvalidBeanException(
-                        "Bean '" + config.getName() + "' does not match type '" + config.getType() + "'"
-                );
-            }
-            log.debug("Using existing reader bean '{}'", config.getName());
-            return (ItemReader<I>) readerBean;
-        }
-
         // 2️⃣ Build a new reader using Java 17 switch expression
         ItemReader<I> reader = switch (config.getType()) {
             case "FlatFileItemReader" -> FlatFileReaderBuilder.build(config);
@@ -73,7 +57,9 @@ public class ReaderFactory {
         return reader;
     }
 
-    private boolean isAllowedReader(Object bean, String type) {
+
+
+    public boolean isAllowedReader(Object bean, String type) {
         Class<?> expected = READER_TYPES.get(type);
         if (expected == null) throw new TypeNotSupportedException("Unknown reader type: " + type);
         return expected.isInstance(bean);

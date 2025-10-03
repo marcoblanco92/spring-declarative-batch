@@ -1,6 +1,5 @@
 package com.marbl.declarative_batct.spring_declarative_batch.factory.component;
 
-import com.marbl.declarative_batct.spring_declarative_batch.exception.InvalidBeanException;
 import com.marbl.declarative_batct.spring_declarative_batch.exception.TypeNotSupportedException;
 import com.marbl.declarative_batct.spring_declarative_batch.model.support.ComponentConfig;
 import lombok.extern.slf4j.Slf4j;
@@ -37,22 +36,6 @@ public class ProcessorFactory {
             throw new IllegalArgumentException("Processor type must be provided");
         }
 
-        // 1️⃣ Try to load processor from Spring context
-        if (StringUtils.hasText(config.getName()) && context.containsBean(config.getName())) {
-            Object bean = context.getBean(config.getName());
-            if (!(bean instanceof ItemProcessor<?, ?> processorBean)) {
-                throw new InvalidBeanException("Bean '" + config.getName() + "' is not an ItemProcessor");
-            }
-            if (!isAllowedProcessor(processorBean, config.getType())) {
-                throw new InvalidBeanException(
-                        "Bean '" + config.getName() + "' does not match type '" + config.getType() + "'"
-                );
-            }
-            log.debug("Using existing processor bean '{}'", config.getName());
-            return (ItemProcessor<I,O>) processorBean;
-        }
-
-        // 2️⃣ Build a new processor using Java 17 switch expression
         ItemProcessor<I,O> processor = switch(config.getType()) {
             case "PassThroughItemProcessor" -> (ItemProcessor<I,O>) new PassThroughItemProcessor<I>();
             // case "CustomProcessor" -> (ItemProcessor<I,O>) new CustomProcessor<I,O>();
@@ -63,7 +46,7 @@ public class ProcessorFactory {
         return processor;
     }
 
-    private boolean isAllowedProcessor(Object bean, String type) {
+    public boolean isAllowedProcessor(Object bean, String type) {
         Class<?> expected = PROCESSOR_TYPES.get(type);
         if (expected == null) throw new TypeNotSupportedException("Unknown processor type: " + type);
         return expected.isInstance(bean);

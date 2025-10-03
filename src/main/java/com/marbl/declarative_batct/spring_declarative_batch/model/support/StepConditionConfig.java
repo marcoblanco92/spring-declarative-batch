@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
-public class StepTransitionConfig {
+public class StepConditionConfig {
 
     @NotBlank(message = "On condition is required")
     private String onCondition;
