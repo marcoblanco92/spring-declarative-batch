@@ -12,5 +12,4 @@ public class UserSteplet extends AbstractSteplet<User, Customer> {
     public UserSteplet(StepFactory stepFactory) {
         super(stepFactory);
     }
-
 }

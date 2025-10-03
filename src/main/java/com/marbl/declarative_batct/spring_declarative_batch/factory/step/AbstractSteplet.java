@@ -4,6 +4,9 @@ import com.marbl.declarative_batct.spring_declarative_batch.model.support.StepsC
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.ItemReader;
+import org.springframework.batch.item.ItemWriter;
 
 @RequiredArgsConstructor
 public abstract class AbstractSteplet<I, O> {
@@ -22,4 +25,9 @@ public abstract class AbstractSteplet<I, O> {
     public Step buildStep() throws Exception {
         return stepFactory.<I, O>createStep(getConfig());
     }
+
+//    protected abstract ItemReader<I> reader();
+//    protected abstract ItemProcessor<I,O> processor();
+//    protected abstract ItemWriter<O> writer();
+
 }
