@@ -1,5 +1,8 @@
 package com.marbl.declarative_batct.spring_declarative_batch.factory.step;
 
+import com.marbl.declarative_batct.spring_declarative_batch.annotation.BulkBatchProcessor;
+import com.marbl.declarative_batct.spring_declarative_batch.annotation.BulkBatchReader;
+import com.marbl.declarative_batct.spring_declarative_batch.annotation.BulkBatchWriter;
 import com.marbl.declarative_batct.spring_declarative_batch.exception.InvalidBeanException;
 import com.marbl.declarative_batct.spring_declarative_batch.factory.component.ListenerFactory;
 import com.marbl.declarative_batct.spring_declarative_batch.factory.component.ProcessorFactory;
@@ -45,22 +48,49 @@ public class StepFactory {
         log.info("Creating step step '{}' ", config.getName());
 
         // --- Validate components passed by Steplet against YAML config ---
-        if (reader != null && !readerFactory.isAllowedReader(reader, config.getReader().getType())) {
-            throw new InvalidBeanException(
-                    "Reader passed from Steplet does not match YAML type: expected " + config.getReader().getType()
-            );
+        // --- Validate Reader passed from Steplet ---
+        if (reader != null) {
+            BulkBatchReader ann = reader.getClass().getAnnotation(BulkBatchReader.class);
+            if (ann == null || !ann.name().equals(config.getReader().getName())) {
+                throw new InvalidBeanException(
+                        "Reader passed from Steplet does not match YAML: expected name " + config.getReader().getName()
+                );
+            }
+            if (!readerFactory.isAllowedReader(reader, config.getReader().getType())) {
+                throw new InvalidBeanException(
+                        "Reader passed from Steplet does not match YAML type: expected " + config.getReader().getType()
+                );
+            }
         }
 
-        if (processor != null && !processorFactory.isAllowedProcessor(processor, config.getProcessor().getType())) {
-            throw new InvalidBeanException(
-                    "Processor passed from Steplet does not match YAML type: expected " + config.getProcessor().getType()
-            );
+        // --- Validate Processor passed from Steplet ---
+        if (processor != null) {
+            BulkBatchProcessor ann = processor.getClass().getAnnotation(BulkBatchProcessor.class);
+            if (ann == null || !ann.name().equals(config.getProcessor().getName())) {
+                throw new InvalidBeanException(
+                        "Processor passed from Steplet does not match YAML: expected name " + config.getProcessor().getName()
+                );
+            }
+            if (!processorFactory.isAllowedProcessor(processor, config.getProcessor().getType())) {
+                throw new InvalidBeanException(
+                        "Processor passed from Steplet does not match YAML type: expected " + config.getProcessor().getType()
+                );
+            }
         }
 
-        if (writer != null && !writerFactory.isAllowedWriter(writer, config.getWriter().getType())) {
-            throw new InvalidBeanException(
-                    "Writer passed from Steplet does not match YAML type: expected " + config.getWriter().getType()
-            );
+        // --- Validate Writer passed from Steplet ---
+        if (writer != null) {
+            BulkBatchWriter ann = writer.getClass().getAnnotation(BulkBatchWriter.class);
+            if (ann == null || !ann.name().equals(config.getWriter().getName())) {
+                throw new InvalidBeanException(
+                        "Writer passed from Steplet does not match YAML: expected name " + config.getWriter().getName()
+                );
+            }
+            if (!writerFactory.isAllowedWriter(writer, config.getWriter().getType())) {
+                throw new InvalidBeanException(
+                        "Writer passed from Steplet does not match YAML type: expected " + config.getWriter().getType()
+                );
+            }
         }
 
 

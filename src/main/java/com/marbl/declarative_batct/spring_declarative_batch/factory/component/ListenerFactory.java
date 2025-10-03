@@ -1,5 +1,6 @@
 package com.marbl.declarative_batct.spring_declarative_batch.factory.component;
 
+import com.marbl.declarative_batct.spring_declarative_batch.annotation.BulkBatchListener;
 import com.marbl.declarative_batct.spring_declarative_batch.exception.InvalidBeanException;
 import com.marbl.declarative_batct.spring_declarative_batch.exception.TypeNotSupportedException;
 import com.marbl.declarative_batct.spring_declarative_batch.model.support.ListenerConfig;
@@ -9,6 +10,8 @@ import org.springframework.batch.core.StepListener;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+
+import java.util.Map;
 
 import static com.marbl.declarative_batct.spring_declarative_batch.utils.ListenerUtils.resolveStepListenerClass;
 
@@ -34,16 +37,29 @@ public class ListenerFactory {
             return null; // no explicit bean
         }
 
-        var bean = getBean(config.getName());
-        if (!(bean instanceof JobExecutionListener listener)) {
+        // --- Find all beans annotated with @BulkBatchJobListener ---
+        Map<String, Object> beans = context.getBeansWithAnnotation(BulkBatchListener.class);
+
+        Object targetBean = beans.values().stream()
+                .filter(bean -> {
+                    BulkBatchListener ann = bean.getClass().getAnnotation(BulkBatchListener.class);
+                    return ann != null && ann.name().equals(config.getName());
+                })
+                .findFirst()
+                .orElseThrow(() -> new InvalidBeanException(
+                        "No Job listener bean found with annotation name: " + config.getName()
+                ));
+
+        if (!(targetBean instanceof JobExecutionListener listener)) {
             throw new InvalidBeanException(
-                    "Bean '" + config.getName() + "' does not implement JobExecutionListener"
+                    "Bean '" + config.getName() + "' annotated with @BulkBatchJobListener does not implement JobExecutionListener"
             );
         }
 
-        log.debug("Using JobExecutionListener bean '{}'", config.getName());
+        log.debug("Using JobExecutionListener bean '{}' as {}", config.getName(), config.getType());
         return listener;
     }
+
 
     /**
      * Create a Step listener from config or Spring context.
@@ -58,18 +74,32 @@ public class ListenerFactory {
             return null; // no explicit bean
         }
 
-        var bean = getBean(config.getName());
-        var expectedType = resolveStepListenerClass(config.getType());
+        // --- Find all beans annotated with @BulkBatchListener ---
+        Map<String, Object> beans = context.getBeansWithAnnotation(BulkBatchListener.class);
 
-        if (!expectedType.isInstance(bean)) {
+        Object targetBean = beans.values().stream()
+                .filter(bean -> {
+                    BulkBatchListener ann = bean.getClass().getAnnotation(BulkBatchListener.class);
+                    return ann != null && ann.name().equals(config.getName());
+                })
+                .findFirst()
+                .orElseThrow(() -> new InvalidBeanException(
+                        "No Step listener bean found with annotation name: " + config.getName()
+                ));
+
+
+        // --- Validate type ---
+        var expectedType = resolveStepListenerClass(config.getType());
+        if (!expectedType.isInstance(targetBean)) {
             throw new InvalidBeanException(
-                    "Bean '" + config.getName() + "' does not implement " + config.getType()
+                    "Bean '" + config.getName() + "' annotated with @BulkBatchListener does not implement " + config.getType()
             );
         }
 
         log.debug("Using Step listener bean '{}' as {}", config.getName(), config.getType());
-        return (StepListener) bean;
+        return (StepListener) targetBean;
     }
+
 
     // --- Helper method to retrieve Spring bean with validation ---
     private Object getBean(String beanName) {

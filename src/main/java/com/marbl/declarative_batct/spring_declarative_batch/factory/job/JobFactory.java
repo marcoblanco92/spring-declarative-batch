@@ -97,10 +97,9 @@ public class JobFactory {
                     throw new IllegalArgumentException("Next step not found: " + stepConfig.getNext());
                 }
 
-                SimpleFlow flow = new FlowBuilder<SimpleFlow>("flow-" + currentStep.getName() + "-" + nextStep.getName())
+                FlowBuilder<SimpleFlow> flow = new FlowBuilder<SimpleFlow>("flow-" + currentStep.getName() + "-" + nextStep.getName())
                         .start(currentStep)
-                        .next(nextStep)
-                        .end();
+                        .next(nextStep);
                 jobBuilder.next((JobExecutionDecider) flow);
             }
         }
