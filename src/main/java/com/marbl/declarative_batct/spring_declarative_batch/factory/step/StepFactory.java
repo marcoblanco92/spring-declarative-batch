@@ -149,6 +149,7 @@ public class StepFactory {
             }
         }
 
+
         // --- Fault-tolerance: retry & skip ---
         if (config.getRetry() != null || config.getSkip() != null || config.getTransaction() != null) {
             FaultTolerantStepBuilder<I, O> faultStep = chunkStep.faultTolerant();

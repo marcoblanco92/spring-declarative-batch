@@ -53,17 +53,17 @@ public class StepsConfig {
 
     // --- Processor listener validation ---
     @AssertTrue(message = "Processor listener name must match processor bean name when processor implements ItemProcessListener")
-    private boolean isProcessorListenerValid() {
+    public boolean isProcessorListenerValid() {
         return validateListenerMatch(name, processor, listeners, "ItemProcessListener", "Processor");
     }
 
     @AssertTrue(message = "Reader listener name must match reader bean name when reader implements ItemReadListener")
-    private boolean isReaderListenerValid() {
+    public boolean isReaderListenerValid() {
         return validateListenerMatch(name, reader, listeners, "ItemReadListener", "Reader");
     }
 
     @AssertTrue(message = "Writer listener name must match writer bean name when writer implements ItemWriteListener")
-    private boolean isWriterListenerValid() {
+    public boolean isWriterListenerValid() {
         return validateListenerMatch(name, writer, listeners, "ItemWriteListener", "Writer");
     }
 

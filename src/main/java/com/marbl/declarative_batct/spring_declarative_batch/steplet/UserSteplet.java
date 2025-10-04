@@ -5,13 +5,20 @@ import com.marbl.declarative_batct.spring_declarative_batch.factory.step.Abstrac
 import com.marbl.declarative_batct.spring_declarative_batch.factory.step.StepFactory;
 import com.marbl.declarative_batct.spring_declarative_batch.model.dummy.Customer;
 import com.marbl.declarative_batct.spring_declarative_batch.model.dummy.User;
+import org.springframework.batch.core.StepExecution;
+import org.springframework.batch.core.StepExecutionListener;
 import org.springframework.stereotype.Component;
 
 @Component
 @BulkBatchSteplet(name = "userSteplet")
-public class UserSteplet extends AbstractSteplet<User, Customer> {
+public class UserSteplet extends AbstractSteplet<User, Customer> implements StepExecutionListener {
 
     public UserSteplet(StepFactory stepFactory) {
         super(stepFactory);
+    }
+
+    @Override
+    public void beforeStep(StepExecution stepExecution) {
+        System.out.println("STEP BEFORE STEP");
     }
 }

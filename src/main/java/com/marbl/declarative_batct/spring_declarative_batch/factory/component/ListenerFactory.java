@@ -1,6 +1,6 @@
 package com.marbl.declarative_batct.spring_declarative_batch.factory.component;
 
-import com.marbl.declarative_batct.spring_declarative_batch.annotation.BulkBatchListener;
+import com.marbl.declarative_batct.spring_declarative_batch.annotation.*;
 import com.marbl.declarative_batct.spring_declarative_batch.exception.InvalidBeanException;
 import com.marbl.declarative_batct.spring_declarative_batch.exception.TypeNotSupportedException;
 import com.marbl.declarative_batct.spring_declarative_batch.model.support.ListenerConfig;
@@ -11,6 +11,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import java.lang.annotation.Annotation;
 import java.util.Map;
 
 import static com.marbl.declarative_batct.spring_declarative_batch.utils.ListenerUtils.resolveStepListenerClass;
@@ -71,28 +72,44 @@ public class ListenerFactory {
         }
 
         if (!StringUtils.hasText(config.getName())) {
-            return null; // no explicit bean
+            return null; // no explicit bean defined in YAML
         }
 
-        // --- Find all beans annotated with @BulkBatchListener ---
-        Map<String, Object> beans = context.getBeansWithAnnotation(BulkBatchListener.class);
+        Class<?> expectedType = resolveStepListenerClass(config.getType());
+        Object targetBean = null;
 
-        Object targetBean = beans.values().stream()
-                .filter(bean -> {
-                    BulkBatchListener ann = bean.getClass().getAnnotation(BulkBatchListener.class);
-                    return ann != null && ann.name().equals(config.getName());
-                })
-                .findFirst()
-                .orElseThrow(() -> new InvalidBeanException(
-                        "No Step listener bean found with annotation name: " + config.getName()
-                ));
+        // --- 1 Search for beans annotated with @BulkBatchListener ---
+        targetBean = findBeanByAnnotation(config.getName(), BulkBatchListener.class, expectedType);
 
+        // --- 2 Fallback to @BulkBatchSteplet ---
+        if (targetBean == null) {
+            targetBean = findBeanByAnnotation(config.getName(), BulkBatchSteplet.class, expectedType);
+        }
 
-        // --- Validate type ---
-        var expectedType = resolveStepListenerClass(config.getType());
+        // --- 3 Fallback to @BulkBatchReader ---
+        if (targetBean == null) {
+            targetBean = findBeanByAnnotation(config.getName(), BulkBatchReader.class, expectedType);
+        }
+
+        // --- 4 Fallback to @BulkBatchProcessor ---
+        if (targetBean == null) {
+            targetBean = findBeanByAnnotation(config.getName(), BulkBatchProcessor.class, expectedType);
+        }
+
+        // --- 5 Fallback to @BulkBatchWriter ---
+        if (targetBean == null) {
+            targetBean = findBeanByAnnotation(config.getName(), BulkBatchWriter.class, expectedType);
+        }
+
+        // --- 6 Throw error if nothing found ---
+        if (targetBean == null) {
+            throw new InvalidBeanException("No bean found implementing listener '" + config.getName() + "'");
+        }
+
+        // --- 7 Validate type safety ---
         if (!expectedType.isInstance(targetBean)) {
             throw new InvalidBeanException(
-                    "Bean '" + config.getName() + "' annotated with @BulkBatchListener does not implement " + config.getType()
+                    "Bean '" + config.getName() + "' does not implement expected type: " + config.getType()
             );
         }
 
@@ -100,13 +117,23 @@ public class ListenerFactory {
         return (StepListener) targetBean;
     }
 
+    private Object findBeanByAnnotation(String name, Class<? extends Annotation> annotationType, Class<?> expectedType) {
+        Map<String, Object> beans = context.getBeansWithAnnotation(annotationType);
 
-    // --- Helper method to retrieve Spring bean with validation ---
-    private Object getBean(String beanName) {
-        if (!context.containsBean(beanName)) {
-            throw new InvalidBeanException("No bean found with name '" + beanName + "'");
-        }
-        return context.getBean(beanName);
+        return beans.values().stream()
+                .filter(bean -> {
+                    Annotation ann = bean.getClass().getAnnotation(annotationType);
+                    try {
+                        // all BulkBatch* annotations have a `name()` method
+                        String annName = (String) annotationType.getMethod("name").invoke(ann);
+                        return annName.equals(name) && expectedType.isInstance(bean);
+                    } catch (Exception e) {
+                        return false;
+                    }
+                })
+                .findFirst()
+                .orElse(null);
     }
+
 
 }
