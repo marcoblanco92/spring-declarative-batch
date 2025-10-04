@@ -1,12 +1,23 @@
 package com.marbl.declarative_batct.spring_declarative_batch.model.support;
 
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
 public class StepConditionConfig {
 
     private String from;
+    @NotBlank(message = "On condition is required")
     private String onCondition;
     private String toStep;
     private boolean isEnded;
+
+    /**
+     * Validation: if onCondition is populated, then toStep must also be populated
+     */
+    @AssertTrue(message = "'toStep' must be provided if 'onCondition' is set")
+    private boolean isValidOnCondition() {
+        return onCondition == null || onCondition.isBlank() || (toStep != null && !toStep.isBlank());
+    }
 }
