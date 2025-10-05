@@ -2,7 +2,8 @@ package com.marbl.declarative_batct.spring_declarative_batch.builder.reader;
 
 
 import com.marbl.declarative_batct.spring_declarative_batch.configuration.batch.ComponentConfig;
-import com.marbl.declarative_batct.spring_declarative_batch.model.support.reader.JdbcCursorReaderConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.configuration.reader.JdbcCursorReaderConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.utils.DatasourceUtils;
 import com.marbl.declarative_batct.spring_declarative_batch.utils.ReflectionUtils;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -13,6 +14,7 @@ import org.springframework.jdbc.core.PreparedStatementSetter;
 import org.springframework.jdbc.core.RowMapper;
 
 import javax.sql.DataSource;
+import java.util.Map;
 
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -22,7 +24,7 @@ public class JdbcCursorReaderBuilder {
         try {
             JdbcCursorReaderConfig jdbcConfig = (JdbcCursorReaderConfig) config.getConfig();
 
-            DataSource ds = context.getBean(jdbcConfig.getDatasource(), DataSource.class);
+            DataSource ds = DatasourceUtils.getDataSource(context,jdbcConfig.getDatasource());
 
             // Instantiate RowMapper and PreparedStatementSetter via ReflectionUtils
             RowMapper<I> rowMapper = ReflectionUtils.instantiateClass(jdbcConfig.getMappedClass(), RowMapper.class);

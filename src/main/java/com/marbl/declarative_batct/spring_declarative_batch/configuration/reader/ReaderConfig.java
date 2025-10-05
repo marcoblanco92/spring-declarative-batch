@@ -1,4 +1,4 @@
-package com.marbl.declarative_batct.spring_declarative_batch.model.support.reader;
+package com.marbl.declarative_batct.spring_declarative_batch.configuration.reader;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;

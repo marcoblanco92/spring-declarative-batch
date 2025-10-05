@@ -1,10 +1,13 @@
-package com.marbl.declarative_batct.spring_declarative_batch.model.support.executor;
+package com.marbl.declarative_batct.spring_declarative_batch.support.executor;
 
-import com.marbl.declarative_batct.spring_declarative_batch.factory.job.JobFactory;
 import com.marbl.declarative_batct.spring_declarative_batch.configuration.batch.BatchJobConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.factory.job.BatchJobFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.*;
+import org.springframework.batch.core.configuration.JobRegistry;
+import org.springframework.batch.core.configuration.support.MapJobRegistry;
+import org.springframework.batch.core.converter.DefaultJobParametersConverter;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
 import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
@@ -17,22 +20,30 @@ import org.springframework.stereotype.Component;
 public class BatchJobExecutor {
 
     private final BatchJobConfig jobConfig;
-    private final JobFactory jobFactory;
+    private final BatchJobFactory batchJobFactory;
     private final JobLauncher jobLauncher;
+    private final JobRegistry jobRegistry; // Optional registry for dynamic jobs
+
     /**
      * Create and run a Spring Batch Job from YAML config
+     *
+     * @param registerJob true if the job should be registered in JobRegistry (needed for JobOperator)
+     * @return JobExecution result
      */
-    public JobExecution runJob() {
+    public JobExecution runJob(JobParameters params, boolean registerJob) {
         try {
-            Job job = jobFactory.createJob(jobConfig);
+            // Create the job dynamically from the JobFactory
+            Job job = batchJobFactory.createJob();
 
-            JobParameters params = new JobParametersBuilder()
-                    .addLong("timestamp", System.currentTimeMillis()) // param unico per garantire esecuzione nuova
-                    .toJobParameters();
+            // Conditionally register the job in JobRegistry
+            if (registerJob && jobRegistry instanceof MapJobRegistry mapRegistry && !mapRegistry.getJobNames().contains(job.getName())) {
+                mapRegistry.register(batchJobFactory);
+                log.info("Job '{}' registered in JobRegistry", job.getName());
+            }
 
             log.info("Launching job '{}'", job.getName());
             JobExecution execution = jobLauncher.run(job, params);
-            log.info("Job '{}' launched successfully with status {}", job.getName(), execution.getStatus());
+            log.info("Job '{}' finished successfully with status {}", job.getName(), execution.getStatus());
 
             return execution;
 
@@ -50,4 +61,12 @@ public class BatchJobExecutor {
 
         return null;
     }
+
+    /**
+     * Default method without registry registration
+     */
+    public JobExecution runJob(JobParameters jobParameters) {
+        return runJob(jobParameters, false);
+    }
 }
+

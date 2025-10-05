@@ -1,15 +1,15 @@
 package com.marbl.declarative_batct.spring_declarative_batch.factory.job;
 
 import com.marbl.declarative_batct.spring_declarative_batch.annotation.BulkBatchSteplet;
+import com.marbl.declarative_batct.spring_declarative_batch.annotation.BulkBatchValidator;
+import com.marbl.declarative_batct.spring_declarative_batch.configuration.batch.*;
 import com.marbl.declarative_batct.spring_declarative_batch.factory.step.AbstractSteplet;
-import com.marbl.declarative_batct.spring_declarative_batch.configuration.batch.BatchJobConfig;
-import com.marbl.declarative_batct.spring_declarative_batch.configuration.batch.ListenerConfig;
-import com.marbl.declarative_batct.spring_declarative_batch.configuration.batch.StepConditionConfig;
-import com.marbl.declarative_batct.spring_declarative_batch.configuration.batch.StepsConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobParametersValidator;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.JobFactory;
 import org.springframework.batch.core.job.builder.FlowBuilder;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.job.builder.SimpleJobBuilder;
@@ -25,15 +25,23 @@ import java.util.Map;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class JobFactory {
+public class BatchJobFactory implements JobFactory {
 
+    private final BatchJobConfig jobConfig;
     private final JobRepository jobRepository;
     private final ApplicationContext context;
+
+
+    @Override
+    public String getJobName() {
+        return jobConfig.getName();
+    }
 
     /**
      * Create a Job dynamically from YAML config using AbstractSteplet beans
      */
-    public Job createJob(BatchJobConfig jobConfig) throws Exception {
+    @Override
+    public Job createJob() {
         if (jobConfig == null || jobConfig.getSteps() == null || jobConfig.getSteps().isEmpty()) {
             throw new IllegalArgumentException("Job config must contain at least one step");
         }
@@ -46,13 +54,18 @@ public class JobFactory {
 
         // --- Create all steps using steplet beans ---
         Map<String, Step> stepsMap = new HashMap<>();
-        for (StepsConfig stepConfig : jobConfig.getSteps()) {
-            AbstractSteplet<?, ?> steplet = resolveStepletBean(stepConfig);
-            steplet.setConfig(stepConfig);
-            Step step = steplet.buildStep();
-            stepsMap.put(stepConfig.getName(), step);
-            usedSteplets.put(stepConfig.getName(), steplet);
-            log.info("Step '{}' created via steplet '{}'", stepConfig.getName(), steplet.getClass().getSimpleName());
+        try {
+            for (StepsConfig stepConfig : jobConfig.getSteps()) {
+                AbstractSteplet<?, ?> steplet = resolveStepletBean(stepConfig);
+                steplet.setConfig(stepConfig);
+                Step step = steplet.buildStep();
+                stepsMap.put(stepConfig.getName(), step);
+                usedSteplets.put(stepConfig.getName(), steplet);
+                log.info("Step '{}' created via steplet '{}'", stepConfig.getName(), steplet.getClass().getSimpleName());
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new RuntimeException(e);
         }
 
         // --- Check for unused annotated steplet beans ---
@@ -151,12 +164,33 @@ public class JobFactory {
             }
         }
 
+        // --- Attach Params Validator if Allowed
+        ParametersValidatorConfig validatorConfig = jobConfig.getValidator();
+        if (validatorConfig != null && validatorConfig.getName() != null
+                && !validatorConfig.getName().isEmpty() && validatorConfig.isValidate()) {
+
+            Map<String, Object> validators = context.getBeansWithAnnotation(BulkBatchValidator.class);
+            Object validatorBean = validators.get(validatorConfig.getName());
+
+            if (validatorBean == null) {
+                throw new IllegalArgumentException("No BulkBatchValidator bean found with name: " + validatorConfig.getName());
+            }
+
+            if (!(validatorBean instanceof JobParametersValidator)) {
+                throw new IllegalArgumentException("Bean '" + validatorConfig.getName() + "' is not a JobParametersValidator");
+            }
+
+            jobBuilder.validator((JobParametersValidator) validatorBean);
+            log.info("Attached JobParametersValidator '{}' to job '{}'", validatorConfig.getName(), jobConfig.getName());
+        }
+
         // --- Build the job ---
         Job job = jobBuilder.build();
         log.info("Job '{}' created successfully with {} steps", jobConfig.getName(), stepsMap.size());
 
         return job;
     }
+
 
     /**
      * Resolve AbstractSteplet bean from Spring context using the step name

@@ -2,16 +2,19 @@ package com.marbl.declarative_batct.spring_declarative_batch.configuration.datas
 
 import jakarta.validation.Valid;
 import lombok.Data;
+import org.springframework.boot.autoconfigure.batch.BatchProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 @Data
 @Validated
 @ConfigurationProperties(prefix = "bulk")
-public class BatchDatabaseConfig {
-
+public class BatchDatasourceConfig {
     @Valid
-    List<DatasourceConfig> datasources;
+    private Map<String, DataSourceConfig> datasources = new HashMap<>();
+
+    private BatchProperties batchProperties;
 }

@@ -5,10 +5,6 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -62,76 +58,6 @@ public final class ReflectionUtils {
             throw new IllegalArgumentException(
                     String.format("Error instantiating class %s", className), e
             );
-        }
-    }
-
-
-    /**
-     * Invokes a method with the given name and argument on the target object,
-     * only if such method exists. Silently does nothing if the method is not found.
-     *
-     * @param target     the object on which to invoke the method
-     * @param methodName the name of the method
-     * @param args       arguments to pass to the method
-     */
-    public static void invokeMethodIfExists(Object target, String methodName, Object... args) {
-        if (target == null || !StringUtils.hasText(methodName)) {
-            return;
-        }
-
-        Class<?> clazz = target.getClass();
-        Method method = findMethod(clazz, methodName, args);
-
-        if (method != null) {
-            try {
-                method.setAccessible(true);
-                method.invoke(target, args);
-            } catch (IllegalAccessException | InvocationTargetException e) {
-                throw new IllegalStateException(
-                        "Failed to invoke method '" + methodName + "' on " + clazz.getName(), e
-                );
-            }
-        }
-    }
-
-    private static Method findMethod(Class<?> clazz, String methodName, Object... args) {
-        Method[] methods = clazz.getMethods();
-        for (Method m : methods) {
-            if (m.getName().equals(methodName) && parameterTypesMatch(m.getParameterTypes(), args)) {
-                return m;
-            }
-        }
-        return null;
-    }
-
-    private static boolean parameterTypesMatch(Class<?>[] paramTypes, Object[] args) {
-        if (paramTypes.length != args.length) {
-            return false;
-        }
-        for (int i = 0; i < paramTypes.length; i++) {
-            if (args[i] != null && !paramTypes[i].isAssignableFrom(args[i].getClass())) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public static <T> Class<? extends T> loadClass(String className, Class<T> expectedType) {
-        if (!StringUtils.hasText(className)) {
-            throw new IllegalArgumentException("Class name must not be empty");
-        }
-        try {
-            Class<?> clazz = Class.forName(className);
-            if (!expectedType.isAssignableFrom(clazz)) {
-                throw new IllegalArgumentException(
-                        String.format("Class %s does not implement/extend %s", className, expectedType.getName())
-                );
-            }
-            @SuppressWarnings("unchecked")
-            Class<? extends T> safeClass = (Class<? extends T>) clazz;
-            return safeClass;
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Error loading class " + className, e);
         }
     }
 

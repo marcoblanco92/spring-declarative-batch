@@ -1,6 +1,6 @@
 package com.marbl.declarative_batct.spring_declarative_batch.enums;
 
-import com.marbl.declarative_batct.spring_declarative_batch.model.support.reader.JdbcPagingReaderConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.configuration.reader.JdbcPagingReaderConfig;
 import org.springframework.batch.item.database.PagingQueryProvider;
 import org.springframework.batch.item.database.support.*;
 

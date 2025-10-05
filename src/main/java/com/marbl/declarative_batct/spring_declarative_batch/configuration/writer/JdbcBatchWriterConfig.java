@@ -1,4 +1,4 @@
-package com.marbl.declarative_batct.spring_declarative_batch.model.support.writer;
+package com.marbl.declarative_batct.spring_declarative_batch.configuration.writer;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.validation.constraints.NotBlank;

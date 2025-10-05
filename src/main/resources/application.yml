@@ -1,4 +1,23 @@
 bulk:
+  batch-properties:
+    jdbc:
+      initialize-schema: never
+      table-prefix: BATCH_
+  datasources:
+    marbl0:
+      main:
+      url:
+      username:
+      password:
+      type:
+      driver-class-name:
+    marbl1:
+      url:
+      username:
+      password:
+      type:
+      driver-class-name:
+
   batch-job:
     name: UserJob
     listener:
@@ -42,3 +61,5 @@ bulk:
         listeners: # Listener lato step (lista)
           - type: StepExecutionListener
           - type: ItemReadListener
+
+
