@@ -3,7 +3,7 @@ package com.marbl.declarative_batct.spring_declarative_batch.factory.component;
 import com.marbl.declarative_batct.spring_declarative_batch.builder.writer.FlatFileWriterBuilder;
 import com.marbl.declarative_batct.spring_declarative_batch.builder.writer.JdbcBatchWriterBuilder;
 import com.marbl.declarative_batct.spring_declarative_batch.exception.TypeNotSupportedException;
-import com.marbl.declarative_batct.spring_declarative_batch.model.support.ComponentConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.configuration.batch.ComponentConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.context.ApplicationContext;

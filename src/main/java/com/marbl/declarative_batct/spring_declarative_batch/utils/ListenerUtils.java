@@ -1,7 +1,7 @@
 package com.marbl.declarative_batct.spring_declarative_batch.utils;
 
-import com.marbl.declarative_batct.spring_declarative_batch.model.support.ComponentConfig;
-import com.marbl.declarative_batct.spring_declarative_batch.model.support.ListenerConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.configuration.batch.ComponentConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.configuration.batch.ListenerConfig;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1,4 +1,4 @@
-package com.marbl.declarative_batct.spring_declarative_batch.model.support;
+package com.marbl.declarative_batct.spring_declarative_batch.configuration.batch;
 
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;

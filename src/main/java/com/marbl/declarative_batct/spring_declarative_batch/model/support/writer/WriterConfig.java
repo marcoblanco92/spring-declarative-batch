@@ -2,7 +2,7 @@ package com.marbl.declarative_batct.spring_declarative_batch.model.support.write
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.marbl.declarative_batct.spring_declarative_batch.model.support.AdditionalConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.configuration.batch.AdditionalConfig;
 
 // Base interface for Writer
 @JsonTypeInfo(

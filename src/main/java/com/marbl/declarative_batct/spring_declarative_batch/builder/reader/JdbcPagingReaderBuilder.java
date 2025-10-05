@@ -1,6 +1,6 @@
 package com.marbl.declarative_batct.spring_declarative_batch.builder.reader;
 
-import com.marbl.declarative_batct.spring_declarative_batch.model.support.ComponentConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.configuration.batch.ComponentConfig;
 import com.marbl.declarative_batct.spring_declarative_batch.model.support.reader.JdbcPagingReaderConfig;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;

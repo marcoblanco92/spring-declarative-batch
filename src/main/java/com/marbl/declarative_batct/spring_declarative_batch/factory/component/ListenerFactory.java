@@ -3,7 +3,7 @@ package com.marbl.declarative_batct.spring_declarative_batch.factory.component;
 import com.marbl.declarative_batct.spring_declarative_batch.annotation.*;
 import com.marbl.declarative_batct.spring_declarative_batch.exception.InvalidBeanException;
 import com.marbl.declarative_batct.spring_declarative_batch.exception.TypeNotSupportedException;
-import com.marbl.declarative_batct.spring_declarative_batch.model.support.ListenerConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.configuration.batch.ListenerConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.batch.core.StepListener;

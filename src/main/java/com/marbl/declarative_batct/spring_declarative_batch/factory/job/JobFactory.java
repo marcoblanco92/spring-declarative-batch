@@ -2,10 +2,10 @@ package com.marbl.declarative_batct.spring_declarative_batch.factory.job;
 
 import com.marbl.declarative_batct.spring_declarative_batch.annotation.BulkBatchSteplet;
 import com.marbl.declarative_batct.spring_declarative_batch.factory.step.AbstractSteplet;
-import com.marbl.declarative_batct.spring_declarative_batch.model.support.BatchJobConfig;
-import com.marbl.declarative_batct.spring_declarative_batch.model.support.ListenerConfig;
-import com.marbl.declarative_batct.spring_declarative_batch.model.support.StepConditionConfig;
-import com.marbl.declarative_batct.spring_declarative_batch.model.support.StepsConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.configuration.batch.BatchJobConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.configuration.batch.ListenerConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.configuration.batch.StepConditionConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.configuration.batch.StepsConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;

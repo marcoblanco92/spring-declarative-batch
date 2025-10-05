@@ -1,7 +1,7 @@
 package com.marbl.declarative_batct.spring_declarative_batch.builder.reader;
 
 
-import com.marbl.declarative_batct.spring_declarative_batch.model.support.ComponentConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.configuration.batch.ComponentConfig;
 import com.marbl.declarative_batct.spring_declarative_batch.model.support.reader.JdbcCursorReaderConfig;
 import com.marbl.declarative_batct.spring_declarative_batch.utils.ReflectionUtils;
 import lombok.AccessLevel;

@@ -1,6 +1,6 @@
 package com.marbl.declarative_batct.spring_declarative_batch.builder.writer;
 
-import com.marbl.declarative_batct.spring_declarative_batch.model.support.ComponentConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.configuration.batch.ComponentConfig;
 import com.marbl.declarative_batct.spring_declarative_batch.model.support.writer.JdbcBatchWriterConfig;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;

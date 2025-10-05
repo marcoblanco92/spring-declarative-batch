@@ -1,7 +1,6 @@
 package com.marbl.declarative_batct.spring_declarative_batch;
 
-import com.marbl.declarative_batct.spring_declarative_batch.configuration.BatchJobExecutor;
-import com.marbl.declarative_batct.spring_declarative_batch.model.support.BatchJobConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.model.support.executor.BatchJobExecutor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.JobExecution;
@@ -12,8 +11,8 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 
 @Slf4j
 @SpringBootApplication
-@ConfigurationPropertiesScan
 @RequiredArgsConstructor
+@ConfigurationPropertiesScan
 public class SpringDeclarativeBatchApplication implements CommandLineRunner {
 
     private final BatchJobExecutor jobExecutor;
@@ -23,7 +22,7 @@ public class SpringDeclarativeBatchApplication implements CommandLineRunner {
     }
 
     @Override
-    public void run(String... args) throws Exception {
+    public void run(String... args) {
         log.info("Starting batch job from @SpringBootApplication...");
 
         JobExecution execution = jobExecutor.runJob();

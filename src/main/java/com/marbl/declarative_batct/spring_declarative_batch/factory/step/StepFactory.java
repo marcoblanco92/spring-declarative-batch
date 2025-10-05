@@ -8,8 +8,8 @@ import com.marbl.declarative_batct.spring_declarative_batch.factory.component.Li
 import com.marbl.declarative_batct.spring_declarative_batch.factory.component.ProcessorFactory;
 import com.marbl.declarative_batct.spring_declarative_batch.factory.component.ReaderFactory;
 import com.marbl.declarative_batct.spring_declarative_batch.factory.component.WriterFactory;
-import com.marbl.declarative_batct.spring_declarative_batch.model.support.ListenerConfig;
-import com.marbl.declarative_batct.spring_declarative_batch.model.support.StepsConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.configuration.batch.ListenerConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.configuration.batch.StepsConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.*;

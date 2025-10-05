@@ -1,4 +1,4 @@
-package com.marbl.declarative_batct.spring_declarative_batch.model.support;
+package com.marbl.declarative_batct.spring_declarative_batch.configuration.batch;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
@@ -10,7 +10,7 @@ import java.util.List;
 
 @Data
 @Validated
-@ConfigurationProperties(prefix = "batch-job")
+@ConfigurationProperties(prefix = "bulk.batch-job")
 public class BatchJobConfig {
 
     @NotEmpty(message = "BatchJob name is required")
@@ -22,5 +22,6 @@ public class BatchJobConfig {
     @Valid
     @NotEmpty(message = "BatchJob must have at least one step")
     private List<StepsConfig> steps;
+
 }
 

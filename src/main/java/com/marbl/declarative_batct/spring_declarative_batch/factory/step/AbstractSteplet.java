@@ -1,6 +1,6 @@
 package com.marbl.declarative_batct.spring_declarative_batch.factory.step;
 
-import com.marbl.declarative_batct.spring_declarative_batch.model.support.StepsConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.configuration.batch.StepsConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.springframework.batch.core.Step;

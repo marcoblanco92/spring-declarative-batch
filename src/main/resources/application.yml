@@ -1,42 +1,44 @@
-batch-job:
-  name: UserJob
-  listener:                  # Listener lato Job
-    type: JobExecutionListener
-  steps:
-    - name: step1
-      chunk: 15
-      reader:                 # Reader lato step
-        name: userJdbcReader
-        type: JdbcCursorItemReader
-        config:
-          datasource: mainDataSource
-          sql: "SELECT * FROM users"
-          mappedClass: com.marbl.bulk.model.User
-      processor:
-        name: userProcessor
-        type: ItemProcessor
-      writer:
-        name: userKafkaWriter
-        type: KafkaItemWriter
-      listeners:               # Listener lato step (lista)
-        - type: StepExecutionListener
-        - type: ItemWriteListener
-      next: step2
+bulk:
+  batch-job:
+    name: UserJob
+    listener:
+      name: jobListener# Listener lato Job
+      type: JobExecutionListener
+    steps:
+      - name: step1
+        chunk: 15
+        reader:                 # Reader lato step
+          name: userJdbcReader
+          type: JdbcCursorItemReader
+          config:
+            datasource: mainDataSource
+            sql: "SELECT * FROM users"
+            mappedClass: com.marbl.bulk.model.User
+        processor:
+          name: userProcessor
+          type: ItemProcessor
+        writer:
+          name: userKafkaWriter
+          type: KafkaItemWriter
+        listeners:               # Listener lato step (lista)
+          - type: StepExecutionListener
+          - type: ItemWriteListener
+        next: step2
 
-    - name: step2
-      reader: # Reader lato step
-        name: flatFileItemReader2
-        type: FlatFileItemReader
-        config:
-          resource: "classpath:/data/orders.csv"
-          delimiter: ","
-          mappedClass: com.marbl.bulk.model.Order
-      processor:
-        name: userProcessor2
-        type: passThrough
-      writer:
-        name: userJdbcBatchItemWriter2
-        type: JdbcBatchItemWriter
-      listeners: # Listener lato step (lista)
-        - type: StepExecutionListener
-        - type: ItemReadListener
+      - name: step2
+        reader: # Reader lato step
+          name: flatFileItemReader2
+          type: FlatFileItemReader
+          config:
+            resource: "classpath:/data/orders.csv"
+            delimiter: ","
+            mappedClass: com.marbl.bulk.model.Order
+        processor:
+          name: userProcessor2
+          type: passThrough
+        writer:
+          name: userJdbcBatchItemWriter2
+          type: JdbcBatchItemWriter
+        listeners: # Listener lato step (lista)
+          - type: StepExecutionListener
+          - type: ItemReadListener
