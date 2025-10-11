@@ -1,20 +1,31 @@
 package com.marbl.declarative_batct.spring_declarative_batch.builder.writer;
 
 import com.marbl.declarative_batct.spring_declarative_batch.configuration.batch.ComponentConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.configuration.reader.JdbcPagingReaderConfig;
 import com.marbl.declarative_batct.spring_declarative_batch.configuration.writer.FlatFileWriterConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.utils.MapUtils;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.item.file.FlatFileItemWriter;
 import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor;
 import org.springframework.batch.item.file.transform.DelimitedLineAggregator;
 import org.springframework.core.io.FileSystemResource;
 
+@Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class FlatFileWriterBuilder {
 
     public static <O> FlatFileItemWriter<O> build(ComponentConfig config) {
         try {
-            FlatFileWriterConfig flatConfig = (FlatFileWriterConfig) config.getConfig();
+
+            // Normalize the map structure (convert numeric-keyed maps to lists)
+            Object normalizedMap = MapUtils.normalizeMapStructure(config.getConfig());
+            log.debug("Normalized configuration map for FlatFileWriter: {}", normalizedMap);
+            // Convert normalized map to the target DTO
+            FlatFileWriterConfig flatConfig = MapUtils.mapToConfigDto(normalizedMap, FlatFileWriterConfig.class);
+            log.debug("Converted configuration map to FlatFileWriterConfig DTO: {}", flatConfig);
+
             FlatFileItemWriter<O> writer = new FlatFileItemWriter<>();
             writer.setName(config.getName());
 

@@ -1,10 +1,13 @@
 package com.marbl.declarative_batct.spring_declarative_batch.builder.reader;
 
 import com.marbl.declarative_batct.spring_declarative_batch.configuration.batch.ComponentConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.configuration.reader.JdbcCursorReaderConfig;
 import com.marbl.declarative_batct.spring_declarative_batch.configuration.reader.JdbcPagingReaderConfig;
 import com.marbl.declarative_batct.spring_declarative_batch.utils.DatasourceUtils;
+import com.marbl.declarative_batct.spring_declarative_batch.utils.MapUtils;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.item.database.JdbcPagingItemReader;
 import org.springframework.batch.item.database.PagingQueryProvider;
 import org.springframework.context.ApplicationContext;
@@ -15,13 +18,19 @@ import java.util.Map;
 
 import static com.marbl.declarative_batct.spring_declarative_batch.utils.ReflectionUtils.instantiateClass;
 
-
+@Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class JdbcPagingReaderBuilder {
 
     public static <I> JdbcPagingItemReader<I> build(ComponentConfig config, ApplicationContext context, int chunk) {
         try {
-            JdbcPagingReaderConfig jdbcConfig = (JdbcPagingReaderConfig) config.getConfig();
+
+            // Normalize the map structure (convert numeric-keyed maps to lists)
+            Object normalizedMap = MapUtils.normalizeMapStructure(config.getConfig());
+            log.debug("Normalized configuration map for JdbcPagingReader: {}", normalizedMap);
+            // Convert normalized map to the target DTO
+            JdbcPagingReaderConfig jdbcConfig = MapUtils.mapToConfigDto(normalizedMap, JdbcPagingReaderConfig.class);
+            log.debug("Converted configuration map to JdbcPagingReaderConfig DTO: {}", jdbcConfig);
 
             DataSource ds = DatasourceUtils.getDataSource(context, jdbcConfig.getDatasource());
             RowMapper<I> rowMapper = instantiateClass(jdbcConfig.getMappedClass(), RowMapper.class);

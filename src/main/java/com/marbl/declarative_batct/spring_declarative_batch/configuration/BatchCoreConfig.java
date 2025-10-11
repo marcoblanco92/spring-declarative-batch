@@ -8,12 +8,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.configuration.support.DefaultBatchConfiguration;
 import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.explore.support.JobExplorerFactoryBean;
+import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -98,5 +100,12 @@ public class BatchCoreConfig extends DefaultBatchConfiguration {
 
         return jobExplorerFactoryBean.getObject();
     }
+
+    @Bean
+    @Profile("local")
+    public RunIdIncrementer runIdIncrementer() {
+        return new RunIdIncrementer();
+    }
+
 
 }

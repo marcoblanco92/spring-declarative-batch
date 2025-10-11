@@ -3,7 +3,7 @@ package com.marbl.declarative_batct.spring_declarative_batch.builder.reader;
 
 import com.marbl.declarative_batct.spring_declarative_batch.configuration.batch.ComponentConfig;
 import com.marbl.declarative_batct.spring_declarative_batch.configuration.reader.FlatFileReaderConfig;
-import com.marbl.declarative_batct.spring_declarative_batch.utils.ReflectionUtils;
+import com.marbl.declarative_batct.spring_declarative_batch.utils.MapUtils;
 import com.marbl.declarative_batct.spring_declarative_batch.utils.ResourceUtils;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -19,7 +19,16 @@ import org.springframework.core.io.Resource;
 public class FlatFileReaderBuilder {
 
     public static <I> FlatFileItemReader<I> build(ComponentConfig config) {
-        FlatFileReaderConfig flatConfig = (FlatFileReaderConfig) config.getConfig();
+
+        // Normalize the map structure (convert numeric-keyed maps to lists)
+        Object normalizedMap = MapUtils.normalizeMapStructure(config.getConfig());
+        log.debug("Normalized configuration map for FlatFileReader: {}", normalizedMap);
+
+        // Convert normalized map to the target DTO
+        FlatFileReaderConfig flatConfig = MapUtils.mapToConfigDto(normalizedMap, FlatFileReaderConfig.class);
+        log.debug("Converted configuration map to FlatFileReaderConfig DTO: {}", flatConfig);
+
+
         try {
             FlatFileItemReader<I> reader = new FlatFileItemReader<>();
             reader.setName(config.getName());
@@ -36,7 +45,9 @@ public class FlatFileReaderBuilder {
             tokenizer.setNames(flatConfig.getFieldNames());
 
             BeanWrapperFieldSetMapper<I> fieldSetMapper = new BeanWrapperFieldSetMapper<>();
-            fieldSetMapper.setTargetType(ReflectionUtils.instantiateClass(flatConfig.getMappedClass(), Class.class));
+            @SuppressWarnings("unchecked")
+            Class<I> targetClass = (Class<I>) Class.forName(flatConfig.getMappedClass());
+            fieldSetMapper.setTargetType(targetClass);
 
             lineMapper.setLineTokenizer(tokenizer);
             lineMapper.setFieldSetMapper(fieldSetMapper);

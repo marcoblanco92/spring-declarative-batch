@@ -2,11 +2,14 @@ package com.marbl.declarative_batct.spring_declarative_batch.builder.reader;
 
 
 import com.marbl.declarative_batct.spring_declarative_batch.configuration.batch.ComponentConfig;
+import com.marbl.declarative_batct.spring_declarative_batch.configuration.reader.FlatFileReaderConfig;
 import com.marbl.declarative_batct.spring_declarative_batch.configuration.reader.JdbcCursorReaderConfig;
 import com.marbl.declarative_batct.spring_declarative_batch.utils.DatasourceUtils;
+import com.marbl.declarative_batct.spring_declarative_batch.utils.MapUtils;
 import com.marbl.declarative_batct.spring_declarative_batch.utils.ReflectionUtils;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
 import org.springframework.context.ApplicationContext;
@@ -15,13 +18,20 @@ import org.springframework.jdbc.core.RowMapper;
 
 import javax.sql.DataSource;
 
-
+@Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class JdbcCursorReaderBuilder {
 
     public static <I> JdbcCursorItemReader<I> build(ComponentConfig config, ApplicationContext context) {
         try {
-            JdbcCursorReaderConfig jdbcConfig = (JdbcCursorReaderConfig) config.getConfig();
+
+            // Normalize the map structure (convert numeric-keyed maps to lists)
+            Object normalizedMap = MapUtils.normalizeMapStructure(config.getConfig());
+            log.debug("Normalized configuration map for JdbcCursorReader: {}", normalizedMap);
+
+            // Convert normalized map to the target DTO
+            JdbcCursorReaderConfig jdbcConfig = MapUtils.mapToConfigDto(normalizedMap, JdbcCursorReaderConfig.class);
+            log.debug("Converted configuration map to JdbcCursorReaderConfig DTO: {}", jdbcConfig);
 
             DataSource ds = DatasourceUtils.getDataSource(context, jdbcConfig.getDatasource());
 

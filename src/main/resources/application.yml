@@ -1,7 +1,8 @@
 bulk:
   batch-properties:
     jdbc:
-      initialize-schema: always
+      platform: postgresql
+      initialize-schema: never
       table-prefix: BATCH_
   datasources:
     b_declarative:
@@ -21,9 +22,9 @@ bulk:
           name: pocFileReader
           type: FlatFileItemReader
           config:
-            resource: src/main/resources/poc/PocFileToRead.csv
+            resource: file:src/main/resources/poc/PocFileToRead.csv
             lineToSkip: 1
-            fieldNames: id, name, surname, email, transaction, status, creationDate
+            fieldNames: [id, name, surname, email, transaction, status, creationDate]
             mappedClass: com.marbl.declarative_batct.spring_declarative_batch.poc.model.UserCsv
         processor:
           name: pocProcessor
@@ -36,7 +37,7 @@ bulk:
             sql: |
               WITH upsert_cliente AS (
               INSERT INTO tb_poc_cliente (nome, cognome, email)
-              VALUES (:nome, :cognome, :email)
+              VALUES (?, ?, ?)
               ON CONFLICT (email) DO NOTHING
               RETURNING id_cliente
               )
@@ -44,13 +45,13 @@ bulk:
               VALUES (
               COALESCE(
               (SELECT id_cliente FROM upsert_cliente),
-              (SELECT id_cliente FROM tb_poc_cliente WHERE email = :email)
+              (SELECT id_cliente FROM tb_poc_cliente WHERE email = ?)
               ),
-              :importo,
-              :stato,
-              :data_creazione
+              ?,
+              ?,
+              ?
               );
-            preparedStatmentClass: com.marbl.declarative_batct.spring_declarative_batch.poc.statement.UserTransactionPreparedStatementSetter
+            preparedStatementClass: com.marbl.declarative_batct.spring_declarative_batch.poc.statement.UserTransactionPreparedStatementSetter
         listeners:
           - type: StepExecutionListener
             name: pocStep

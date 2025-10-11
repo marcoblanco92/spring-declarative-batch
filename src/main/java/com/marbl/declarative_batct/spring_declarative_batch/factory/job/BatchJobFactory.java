@@ -4,7 +4,6 @@ import com.marbl.declarative_batct.spring_declarative_batch.annotation.BulkBatch
 import com.marbl.declarative_batct.spring_declarative_batch.annotation.BulkBatchValidator;
 import com.marbl.declarative_batct.spring_declarative_batch.configuration.batch.*;
 import com.marbl.declarative_batct.spring_declarative_batch.exception.BatchException;
-import com.marbl.declarative_batct.spring_declarative_batch.exception.InvalidBeanException;
 import com.marbl.declarative_batct.spring_declarative_batch.factory.step.AbstractSteplet;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,8 +16,10 @@ import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.job.builder.SimpleJobBuilder;
 import org.springframework.batch.core.job.flow.JobExecutionDecider;
 import org.springframework.batch.core.job.flow.support.SimpleFlow;
+import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.context.ApplicationContext;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -32,6 +33,8 @@ public class BatchJobFactory implements JobFactory {
     private final BatchJobConfig jobConfig;
     private final JobRepository jobRepository;
     private final ApplicationContext context;
+
+    private final @Nullable RunIdIncrementer runIdIncrementer;
 
 
     @Override
@@ -66,7 +69,7 @@ public class BatchJobFactory implements JobFactory {
                 log.info("Step '{}' created via steplet '{}'", stepConfig.getName(), steplet.getClass().getSimpleName());
             }
         } catch (Exception e) {
-            throw new BatchException(e.getMessage(),e);
+            throw new BatchException(e.getMessage(), e);
         }
 
         // --- Check for unused annotated steplet beans ---
@@ -183,6 +186,11 @@ public class BatchJobFactory implements JobFactory {
 
             jobBuilder.validator((JobParametersValidator) validatorBean);
             log.info("Attached JobParametersValidator '{}' to job '{}'", validatorConfig.getName(), jobConfig.getName());
+        }
+
+        // --- Attach Incrementer valid only for local profile
+        if (runIdIncrementer != null) {
+            jobBuilder.incrementer(runIdIncrementer);
         }
 
         // --- Build the job ---
