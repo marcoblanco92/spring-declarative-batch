@@ -1,65 +1,58 @@
 bulk:
   batch-properties:
     jdbc:
-      initialize-schema: never
+      initialize-schema: always
       table-prefix: BATCH_
   datasources:
-    marbl0:
-      main:
-      url:
-      username:
-      password:
-      type:
-      driver-class-name:
-    marbl1:
-      url:
-      username:
-      password:
-      type:
-      driver-class-name:
+    b_declarative:
+      main: true
+      url: jdbc:postgresql://localhost:5432/b_declarative
+      username: marbl_u
+      password: marbl_p
+      type: POSTGRES
+      driver-class-name: org.postgresql.Driver
 
   batch-job:
-    name: UserJob
-    listener:
-      name: jobListener# Listener lato Job
-      type: JobExecutionListener
+    name: pocJob
     steps:
-      - name: step1
-        chunk: 15
+      - name: pocStep
+        chunk: 10
         reader:                 # Reader lato step
-          name: userJdbcReader
-          type: JdbcCursorItemReader
-          config:
-            datasource: mainDataSource
-            sql: "SELECT * FROM users"
-            mappedClass: com.marbl.bulk.model.User
-        processor:
-          name: userProcessor
-          type: ItemProcessor
-        writer:
-          name: userKafkaWriter
-          type: KafkaItemWriter
-        listeners:               # Listener lato step (lista)
-          - type: StepExecutionListener
-          - type: ItemWriteListener
-        next: step2
-
-      - name: step2
-        reader: # Reader lato step
-          name: flatFileItemReader2
+          name: pocFileReader
           type: FlatFileItemReader
           config:
-            resource: "classpath:/data/orders.csv"
-            delimiter: ","
-            mappedClass: com.marbl.bulk.model.Order
+            resource: src/main/resources/poc/PocFileToRead.csv
+            lineToSkip: 1
+            fieldNames: id, name, surname, email, transaction, status, creationDate
+            mappedClass: com.marbl.declarative_batct.spring_declarative_batch.poc.model.UserCsv
         processor:
-          name: userProcessor2
-          type: passThrough
+          name: pocProcessor
+          type: ItemProcessor
         writer:
-          name: userJdbcBatchItemWriter2
+          name: pocCascadeInsert
           type: JdbcBatchItemWriter
-        listeners: # Listener lato step (lista)
+          config:
+            datasource: b_declarative
+            sql: |
+              WITH upsert_cliente AS (
+              INSERT INTO tb_poc_cliente (nome, cognome, email)
+              VALUES (:nome, :cognome, :email)
+              ON CONFLICT (email) DO NOTHING
+              RETURNING id_cliente
+              )
+              INSERT INTO tb_poc_transazione (id_cliente, importo, stato, data_creazione)
+              VALUES (
+              COALESCE(
+              (SELECT id_cliente FROM upsert_cliente),
+              (SELECT id_cliente FROM tb_poc_cliente WHERE email = :email)
+              ),
+              :importo,
+              :stato,
+              :data_creazione
+              );
+            preparedStatmentClass: com.marbl.declarative_batct.spring_declarative_batch.poc.statement.UserTransactionPreparedStatementSetter
+        listeners:
           - type: StepExecutionListener
-          - type: ItemReadListener
+            name: pocStep
 
 

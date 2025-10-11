@@ -5,7 +5,6 @@ import com.marbl.declarative_batct.spring_declarative_batch.utils.JobParametersU
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.JobExecution;
-import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -13,7 +12,6 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 
 @Slf4j
 @SpringBootApplication
-@EnableBatchProcessing
 @RequiredArgsConstructor
 @ConfigurationPropertiesScan
 public class SpringDeclarativeBatchApplication implements CommandLineRunner {

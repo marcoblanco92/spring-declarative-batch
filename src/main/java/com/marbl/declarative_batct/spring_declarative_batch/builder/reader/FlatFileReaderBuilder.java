@@ -19,9 +19,8 @@ import org.springframework.core.io.Resource;
 public class FlatFileReaderBuilder {
 
     public static <I> FlatFileItemReader<I> build(ComponentConfig config) {
+        FlatFileReaderConfig flatConfig = (FlatFileReaderConfig) config.getConfig();
         try {
-            FlatFileReaderConfig flatConfig = (FlatFileReaderConfig) config.getConfig();
-
             FlatFileItemReader<I> reader = new FlatFileItemReader<>();
             reader.setName(config.getName());
 
@@ -50,7 +49,7 @@ public class FlatFileReaderBuilder {
             return reader;
 
         } catch (ClassNotFoundException e) {
-            throw new IllegalArgumentException("Mapped class not found: " + ((FlatFileReaderConfig) config.getConfig()).getMappedClass(), e);
+            throw new IllegalArgumentException("Mapped class not found: " + flatConfig.getMappedClass(), e);
         } catch (Exception e) {
             throw new IllegalArgumentException("Failed to create FlatFileItemReader for config=" + config.getName(), e);
         }

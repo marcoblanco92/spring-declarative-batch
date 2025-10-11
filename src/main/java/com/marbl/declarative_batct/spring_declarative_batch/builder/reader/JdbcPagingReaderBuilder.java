@@ -23,7 +23,7 @@ public class JdbcPagingReaderBuilder {
         try {
             JdbcPagingReaderConfig jdbcConfig = (JdbcPagingReaderConfig) config.getConfig();
 
-            DataSource ds = DatasourceUtils.getDataSource(context,jdbcConfig.getDatasource());
+            DataSource ds = DatasourceUtils.getDataSource(context, jdbcConfig.getDatasource());
             RowMapper<I> rowMapper = instantiateClass(jdbcConfig.getMappedClass(), RowMapper.class);
 
             JdbcPagingItemReader<I> reader = new JdbcPagingItemReader<>();

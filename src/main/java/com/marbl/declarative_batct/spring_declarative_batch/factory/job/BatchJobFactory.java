@@ -3,6 +3,8 @@ package com.marbl.declarative_batct.spring_declarative_batch.factory.job;
 import com.marbl.declarative_batct.spring_declarative_batch.annotation.BulkBatchSteplet;
 import com.marbl.declarative_batct.spring_declarative_batch.annotation.BulkBatchValidator;
 import com.marbl.declarative_batct.spring_declarative_batch.configuration.batch.*;
+import com.marbl.declarative_batct.spring_declarative_batch.exception.BatchException;
+import com.marbl.declarative_batct.spring_declarative_batch.exception.InvalidBeanException;
 import com.marbl.declarative_batct.spring_declarative_batch.factory.step.AbstractSteplet;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -64,8 +66,7 @@ public class BatchJobFactory implements JobFactory {
                 log.info("Step '{}' created via steplet '{}'", stepConfig.getName(), steplet.getClass().getSimpleName());
             }
         } catch (Exception e) {
-            log.error(e.getMessage());
-            throw new RuntimeException(e);
+            throw new BatchException(e.getMessage(),e);
         }
 
         // --- Check for unused annotated steplet beans ---

@@ -4,12 +4,9 @@ import com.marbl.declarative_batct.spring_declarative_batch.configuration.batch.
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.item.ItemProcessor;
-import org.springframework.batch.item.ItemReader;
-import org.springframework.batch.item.ItemWriter;
 
 @RequiredArgsConstructor
-public abstract class AbstractSteplet<I, O> {
+public abstract class AbstractSteplet<I, O> implements StepComponent<I, O> {
 
     private final StepFactory stepFactory;
 
@@ -25,14 +22,12 @@ public abstract class AbstractSteplet<I, O> {
         );
     }
 
-    protected ItemReader<I> reader() { return null; }
-    protected ItemProcessor<I, O> processor() { return null; }
-    protected ItemWriter<O> writer() { return null; }
 
     protected StepsConfig getConfig() {
         if (config == null) throw new IllegalStateException("StepsConfig not set");
         return config;
     }
+
 }
 
 

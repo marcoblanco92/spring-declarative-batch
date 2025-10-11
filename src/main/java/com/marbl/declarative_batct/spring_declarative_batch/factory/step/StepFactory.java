@@ -42,7 +42,8 @@ public class StepFactory {
      * This method uses the library factories to build reader/processor/writer and attaches listeners.
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public <I, O> Step createStep(StepsConfig config, ItemReader<I> reader,
+    public <I, O> Step createStep(StepsConfig config,
+                                  ItemReader<I> reader,
                                   ItemProcessor<I, O> processor,
                                   ItemWriter<O> writer) throws Exception {
         log.info("Creating step step '{}' ", config.getName());

@@ -14,7 +14,6 @@ import org.springframework.jdbc.core.PreparedStatementSetter;
 import org.springframework.jdbc.core.RowMapper;
 
 import javax.sql.DataSource;
-import java.util.Map;
 
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -24,7 +23,7 @@ public class JdbcCursorReaderBuilder {
         try {
             JdbcCursorReaderConfig jdbcConfig = (JdbcCursorReaderConfig) config.getConfig();
 
-            DataSource ds = DatasourceUtils.getDataSource(context,jdbcConfig.getDatasource());
+            DataSource ds = DatasourceUtils.getDataSource(context, jdbcConfig.getDatasource());
 
             // Instantiate RowMapper and PreparedStatementSetter via ReflectionUtils
             RowMapper<I> rowMapper = ReflectionUtils.instantiateClass(jdbcConfig.getMappedClass(), RowMapper.class);

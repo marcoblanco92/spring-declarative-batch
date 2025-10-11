@@ -1,6 +1,7 @@
 package com.marbl.declarative_batct.spring_declarative_batch.configuration.reader;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
 
 @Data
@@ -12,7 +13,7 @@ public class FlatFileReaderConfig implements ReaderConfig {
     private String delimiter = ",";
     private int lineToSkip = 0;
 
-    @NotBlank(message = "FieldsNames is required")
+    @NotEmpty(message = "FieldsNames is required")
     private String[] fieldNames;
 
     @NotBlank(message = "mappedClass is required")

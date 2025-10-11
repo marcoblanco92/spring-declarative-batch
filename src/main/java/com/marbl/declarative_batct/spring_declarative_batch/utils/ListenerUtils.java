@@ -32,10 +32,10 @@ public class ListenerUtils {
             if (listener.getName() != null && listener.getType() != null
                     && listener.getType().equalsIgnoreCase(expectedType)
                     && !listener.getName().equals(component.getName())) {
-                    log.warn("Step [{}] - {} listener name [{}] does not match {} bean name [{}]",
-                            stepName, role, listener.getName(), role.toLowerCase(), component.getName());
-                    return false;
-                }
+                log.warn("Step [{}] - {} listener name [{}] does not match {} bean name [{}]",
+                        stepName, role, listener.getName(), role.toLowerCase(), component.getName());
+                return false;
+            }
 
         }
         return true;
