@@ -17,7 +17,7 @@ public class UserTransactionPreparedStatementSetter implements ItemPreparedState
         ps.setString(2, item.getSurname());
         ps.setString(3, item.getEmail());
         ps.setString(4, item.getEmail());
-        ps.setString(5, item.getTransaction());
+        ps.setDouble(5, Double.parseDouble(item.getTransaction()));
         ps.setString(6, item.getStatus());
         ps.setDate(7, Date.valueOf(item.getCreationDate()));
     }

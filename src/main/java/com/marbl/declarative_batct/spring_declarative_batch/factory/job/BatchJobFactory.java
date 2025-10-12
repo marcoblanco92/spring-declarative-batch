@@ -190,6 +190,7 @@ public class BatchJobFactory implements JobFactory {
 
         // --- Attach Incrementer valid only for local profile
         if (runIdIncrementer != null) {
+            log.info("RunIdIncrementer is used");
             jobBuilder.incrementer(runIdIncrementer);
         }
 

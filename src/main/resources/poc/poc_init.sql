@@ -9,6 +9,14 @@
 -- ===========================================
 -- 1️⃣ Tabella anagrafica clienti
 -- ===========================================
+-- Sequence per tb_poc_cliente
+CREATE SEQUENCE seq_poc_cliente
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
 CREATE TABLE tb_poc_cliente
 (
     id_cliente BIGINT PRIMARY KEY DEFAULT nextval('seq_poc_cliente'),
@@ -17,14 +25,10 @@ CREATE TABLE tb_poc_cliente
     email      VARCHAR(150)
 );
 
+ALTER TABLE tb_poc_cliente
+    ADD CONSTRAINT uq_tb_poc_cliente_email UNIQUE (email);
 
--- Sequence per tb_poc_cliente
-CREATE SEQUENCE seq_poc_cliente
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
+
 
 -- ===========================================
 -- 2️⃣ Tabella transazioni / attività
