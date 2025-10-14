@@ -41,13 +41,17 @@ public class BatchJobExecutor {
                 log.info("Job '{}' registered in JobRegistry", job.getName());
             }
 
-            JobParameters effectiveParams = job.getJobParametersIncrementer() != null
+            JobParameters nextParams = job.getJobParametersIncrementer() != null
                     ? job.getJobParametersIncrementer().getNext(params)
                     : params;
 
+            log.info("JobParameters before increment: {}", params);
+            log.info("JobParameters after increment:  {}", nextParams);
 
-            log.info("Launching job '{}'", job.getName());
-            JobExecution execution = jobLauncher.run(job, effectiveParams);
+
+
+            log.info("Launching job '{}' with Params '{}'", job.getName(), params);
+            JobExecution execution = jobLauncher.run(job, nextParams);
             log.info("Job '{}' finished successfully with status {}", job.getName(), execution.getStatus());
 
             return execution;

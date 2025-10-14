@@ -5,12 +5,15 @@ import com.marbl.declarative_batct.spring_declarative_batch.annotation.BulkBatch
 import com.marbl.declarative_batct.spring_declarative_batch.configuration.batch.*;
 import com.marbl.declarative_batct.spring_declarative_batch.exception.BatchException;
 import com.marbl.declarative_batct.spring_declarative_batch.factory.step.AbstractSteplet;
+import com.marbl.declarative_batct.spring_declarative_batch.support.incrementer.DatabaseRunIdIncrementer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobParametersIncrementer;
 import org.springframework.batch.core.JobParametersValidator;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.JobFactory;
+import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.job.builder.FlowBuilder;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.job.builder.SimpleJobBuilder;
@@ -32,6 +35,7 @@ public class BatchJobFactory implements JobFactory {
 
     private final BatchJobConfig jobConfig;
     private final JobRepository jobRepository;
+    private final JobExplorer jobExplorer;
     private final ApplicationContext context;
 
     private final @Nullable RunIdIncrementer runIdIncrementer;
@@ -107,11 +111,28 @@ public class BatchJobFactory implements JobFactory {
                     );
                 }
 
+                // Ensure that the declared next step corresponds to the next one in YAML order
+                if (stepIndex + 1 < jobConfig.getSteps().size()) {
+                    String expectedNext = jobConfig.getSteps().get(stepIndex + 1).getName();
+                    if (!nextStepName.equals(expectedNext)) {
+                        throw new IllegalArgumentException(
+                                "Step '" + stepConfig.getName() + "' declares next step '" + nextStepName +
+                                        "', but the next step in YAML sequence is '" + expectedNext +
+                                        "'. When 'next' is declared, it must refer to the immediate subsequent step."
+                        );
+                    }
+                } else {
+                    throw new IllegalArgumentException(
+                            "Step '" + stepConfig.getName() + "' declares a 'next' step but it is the last one in the job sequence"
+                    );
+                }
+
                 // Retrieve the nextStep from the map of created steps
                 Step nextStep = stepsMap.get(nextStepName);
 
                 // Chain the next step to the current job builder
                 jobBuilder.next(nextStep);
+                log.info("Step '{}' linked linearly to '{}'", stepConfig.getName(), nextStepName);
             }
 
             // --- Handle conditional transitions ---
@@ -190,8 +211,8 @@ public class BatchJobFactory implements JobFactory {
 
         // --- Attach Incrementer valid only for local profile
         if (runIdIncrementer != null) {
-            log.info("RunIdIncrementer is used");
-            jobBuilder.incrementer(runIdIncrementer);
+            log.info("RunIdIncrementer is used, incrementer: {}", runIdIncrementer);
+            jobBuilder.incrementer(new DatabaseRunIdIncrementer(jobConfig, jobExplorer));
         }
 
         // --- Build the job ---
@@ -218,5 +239,6 @@ public class BatchJobFactory implements JobFactory {
         }
         throw new IllegalArgumentException("No steplet bean found for step name: " + config.getName());
     }
+
 
 }

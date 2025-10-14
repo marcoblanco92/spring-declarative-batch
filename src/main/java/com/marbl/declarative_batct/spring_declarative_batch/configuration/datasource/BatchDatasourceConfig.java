@@ -1,6 +1,7 @@
 package com.marbl.declarative_batct.spring_declarative_batch.configuration.datasource;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.AssertTrue;
 import lombok.Data;
 import org.springframework.boot.autoconfigure.batch.BatchProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -19,4 +20,15 @@ public class BatchDatasourceConfig {
 
     @NestedConfigurationProperty
     private BatchProperties batchProperties = new BatchProperties();
+
+    @AssertTrue(message = "Only one datasource can flagged as Main")
+    public boolean isOnlyOneMainDatasource() {
+        if (datasources == null || datasources.isEmpty()) {
+            return true;
+        }
+        long count = datasources.values().stream()
+                .filter(ds -> Boolean.TRUE.equals(ds.isMain()))
+                .count();
+        return count <= 1;
+    }
 }
