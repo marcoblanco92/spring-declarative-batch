@@ -31,7 +31,7 @@ bulk:
             resource: file:src/main/resources/poc/PocFileToRead.csv
             lineToSkip: 1
             fieldNames: [id, name, surname, email, transaction, status, creationDate]
-            mappedClass: com.marbl.declarative_batct.spring_declarative_batch.poc.model.UserCsv
+            mappedClass: com.marbl.declarative_batch.spring_declarative_batch.poc.model.UserCsv
         processor:
           name: pocProcessor
           type: ItemProcessor
@@ -57,7 +57,7 @@ bulk:
               ?,
               ?
               );
-            preparedStatementClass: com.marbl.declarative_batct.spring_declarative_batch.poc.statement.UserTransactionPreparedStatementSetter
+            preparedStatementClass: com.marbl.declarative_batch.spring_declarative_batch.poc.statement.UserTransactionPreparedStatementSetter
         listeners:
           - type: StepExecutionListener
             name: pocStep
@@ -71,7 +71,7 @@ bulk:
             datasource: b_declarative
             preparedStatementClass:
             providerType: POSTGRESQL
-            mappedClass: com.marbl.declarative_batct.spring_declarative_batch.poc.mapper.ClientTransactionsRowMapper
+            mappedClass: com.marbl.declarative_batch.spring_declarative_batch.poc.mapper.ClientTransactionsRowMapper
             clause:
               selectClause: |
                 SELECT c.id_cliente AS "c.id_cliente", c.nome, c.cognome, t.importo, t.stato, t.data_creazione AS "t.data_creazione"
@@ -93,7 +93,7 @@ bulk:
           config:
             resource: src/main/resources/poc/test_poc.csv
             fieldNames: [idCliente,nome,cognome,importo,stato,dataCreazione]
-            mappedClass: com.marbl.declarative_batct.spring_declarative_batch.poc.dto.ClientTransactionsDTO
+            mappedClass: com.marbl.declarative_batch.spring_declarative_batch.poc.dto.ClientTransactionsDTO
         listeners:
           - type: StepExecutionListener
             name: pocStep2
@@ -118,14 +118,9 @@ bulk:
 logging:
   level:
     root: INFO
-    org.springframework.batch.core: DEBUG
-    org.springframework.batch.core.step: DEBUG
-    org.springframework.batch.core.step.tasklet: DEBUG
-    org.springframework.batch.core.step.item: DEBUG
-  file:
-    name: logs/application.log
+    com.marbl.declarative_batct.spring_declarative_batch: DEBUG
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    console: "[%d{dd-MM-yyyy HH:mm:ss.SSSS}][%-4thread][%-0X{stepName}][%-0X{chunk}][%-3level][%-20logger{1}] %msg%n"
+
 
 
