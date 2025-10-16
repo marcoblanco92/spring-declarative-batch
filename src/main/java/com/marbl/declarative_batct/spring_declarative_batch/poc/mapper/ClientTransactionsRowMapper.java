@@ -16,9 +16,9 @@ public class ClientTransactionsRowMapper implements RowMapper<ClientTransactions
         dto.setIdCliente(rs.getLong("c.id_cliente"));
         dto.setNome(rs.getString("nome"));
         dto.setCognome(rs.getString("cognome"));
-        dto.setImporto(rs.getBigDecimal("importo"));
+        dto.setImporto(rs.getString("importo"));
         dto.setStato(rs.getString("stato"));
-        dto.setDataCreazione(rs.getDate("t.data_creazione").toLocalDate());
+        dto.setDataCreazione(rs.getString("t.data_creazione"));
         return dto;
     }
 }

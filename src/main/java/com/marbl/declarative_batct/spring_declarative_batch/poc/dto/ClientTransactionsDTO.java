@@ -15,7 +15,7 @@ public class ClientTransactionsDTO {
     private Long idCliente;
     private String nome;
     private String cognome;
-    private BigDecimal importo;
+    private String importo;
     private String stato;
-    private LocalDate dataCreazione;
+    private String dataCreazione;
 }

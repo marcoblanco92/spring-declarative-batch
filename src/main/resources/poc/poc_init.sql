@@ -124,3 +124,22 @@ VALUES (1, 125.50, 'ATTIVO', '2025-10-01'),
        (8, 75.00, 'ATTIVO', '2025-09-26'),
        (9, 12.50, 'SOSPESO', '2025-09-29'),
        (10, 99.00, 'ATTIVO', '2025-09-30');
+
+
+-- 1️⃣ Create sequence
+CREATE SEQUENCE seq_tb_poc_tracing_id
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+-- 2️⃣ Create tracing table
+CREATE TABLE tb_poc_tracing
+(
+    id    BIGINT       NOT NULL DEFAULT nextval('seq_tb_poc_tracing_id'),
+    mail  VARCHAR(255) NOT NULL UNIQUE,
+    count INTEGER               DEFAULT 0,
+    PRIMARY KEY (id)
+);
+

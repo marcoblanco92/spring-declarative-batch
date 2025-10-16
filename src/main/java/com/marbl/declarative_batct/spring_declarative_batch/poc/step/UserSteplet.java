@@ -7,6 +7,7 @@ import com.marbl.declarative_batct.spring_declarative_batch.poc.entity.UserEntit
 import com.marbl.declarative_batct.spring_declarative_batch.poc.model.UserCsv;
 import com.marbl.declarative_batct.spring_declarative_batch.poc.step.processor.PocProcessor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.StepExecutionListener;
 import org.springframework.batch.item.ItemProcessor;
@@ -33,4 +34,10 @@ public class UserSteplet extends AbstractSteplet<UserCsv, UserEntity> implements
     public void beforeStep(StepExecution stepExecution) {
         log.info("Step execution started for {}", stepExecution.getStepName());
     }
+
+//    @Override
+//    public ExitStatus afterStep(StepExecution stepExecution) {
+//        log.info("Step execution finished for {}", stepExecution.getStepName());
+//        return stepExecution.getExitStatus();
+//    }
 }

@@ -13,7 +13,7 @@ bulk:
       type: POSTGRES
       driver-class-name: org.postgresql.Driver
     b_aux:
-      url: jdbc:postgresql://localhost:5432/b_aux
+      url: jdbc:postgresql://localhost:5433/b_aux
       username: marbl_u
       password: marbl_p
       type: POSTGRES
@@ -96,6 +96,36 @@ bulk:
             mappedClass: com.marbl.declarative_batct.spring_declarative_batch.poc.dto.ClientTransactionsDTO
         listeners:
           - type: StepExecutionListener
-            name: pocStep
+            name: pocStep2
+      - name: customStep
+        chunk: 5
+        reader:
+          name: customFileReader
+          type: FlatFileItemReader
+        processor:
+          name: customItemProcessor
+          type: ItemProcessor
+        writer:
+          name: customBatchWriter
+          type: ItemWriter
+        transitions:
+          - from: pocStep2
+            on-condition: COMPLETED_WITH_INTEGRATION
+            to-step: customStep
+            ended: true
+
+
+logging:
+  level:
+    root: INFO
+    org.springframework.batch.core: DEBUG
+    org.springframework.batch.core.step: DEBUG
+    org.springframework.batch.core.step.tasklet: DEBUG
+    org.springframework.batch.core.step.item: DEBUG
+  file:
+    name: logs/application.log
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
 
 

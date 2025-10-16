@@ -22,7 +22,7 @@ public class PocProcessor implements ItemProcessor<UserCsv, UserEntity> {
                 .email(item.getEmail())
                 .status(item.getStatus())
                 .creationDate(item.getCreationDate())
-                .transaction(item.getTransaction())
+                .transaction(String.valueOf(Double.parseDouble(item.getTransaction()) * (0.8 + Math.random() * 0.4)))
                 .build();
 
         log.info("Created user to persist: {}", entity);
