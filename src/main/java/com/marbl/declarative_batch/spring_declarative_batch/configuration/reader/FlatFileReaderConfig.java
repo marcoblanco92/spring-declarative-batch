@@ -7,15 +7,15 @@ import lombok.Data;
 @Data
 public class FlatFileReaderConfig implements ReaderConfig {
 
-    @NotBlank(message = "Resource is required")
+    @NotBlank(message = "'resource' must be provided")
     private String resource;
 
     private String delimiter = ",";
     private int lineToSkip = 0;
 
-    @NotEmpty(message = "FieldsNames is required")
+    @NotEmpty(message = "'fieldNames' must contain at least one value")
     private String[] fieldNames;
 
-    @NotBlank(message = "mappedClass is required")
+    @NotBlank(message = "'mappedClass' must be provided")
     private String mappedClass;
 }

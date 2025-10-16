@@ -6,15 +6,15 @@ import lombok.Data;
 @Data
 public class JdbcCursorReaderConfig implements ReaderConfig {
 
-    @NotBlank(message = "Datasource is required")
+    @NotBlank(message = "'datasource' must be provided")
     private String datasource;
 
-    @NotBlank(message = "Sql is required")
+    @NotBlank(message = "'sql' must be provided")
     private String sql;
 
-    @NotBlank(message = "PreparedStatementClass is required")
+    @NotBlank(message = "'preparedStatementClass' must be provided")
     private String preparedStatementClass;
 
-    @NotBlank(message = "MappedClass is require")
+    @NotBlank(message = "'mappedClass' must be provided")
     private String mappedClass;
 }

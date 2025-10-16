@@ -1,19 +1,17 @@
 package com.marbl.declarative_batch.spring_declarative_batch.configuration.writer;
 
-import jakarta.annotation.PostConstruct;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
 
 @Data
 public class JdbcBatchWriterConfig {
 
-    @NotBlank(message = "Datasource is required")
+    @NotBlank(message = "'datasource' must be provided")
     private String datasource;
 
-    @NotBlank(message = "Sql is required")
+    @NotBlank(message = "'sql' must be provided")
     private String sql;
 
-    @NotBlank(message = "PreparedStatementClass is required")
+    @NotBlank(message = "'preparedStatementClass' must be provided")
     private String preparedStatementClass;
 }

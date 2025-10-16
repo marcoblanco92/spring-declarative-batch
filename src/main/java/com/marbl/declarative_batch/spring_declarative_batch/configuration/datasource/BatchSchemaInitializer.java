@@ -22,18 +22,18 @@ public class BatchSchemaInitializer {
     public DataSourceInitializer batchDataSourceInitializer() {
         BatchProperties.Jdbc jdbc = batchDatasourceConfig.getBatchProperties().getJdbc();
 
-        // Inizializza solo se richiesto
+        // Initialize only if explicitly requested
         if (jdbc.getInitializeSchema() != DatabaseInitializationMode.ALWAYS) {
             return null;
         }
 
         ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
 
-        // Determina lo script corretto in base alla piattaforma
+        // Determine the correct script based on the platform
         String schemaLocation = getSchemaPathForPlatform(jdbc.getPlatform());
         populator.addScript(new ClassPathResource(schemaLocation));
 
-        // Configura l'inizializzatore
+        // Configure the initializer
         DataSourceInitializer initializer = new DataSourceInitializer();
         initializer.setDataSource(dataSource);
         initializer.setDatabasePopulator(populator);
@@ -41,8 +41,8 @@ public class BatchSchemaInitializer {
     }
 
     /**
-     * Restituisce il path dello script SQL da usare per la piattaforma.
-     * Qui puntiamo direttamente allo script incluso in spring-batch-core.
+     * Returns the SQL script path to use for the given platform.
+     * Here we point directly to the script included in spring-batch-core.
      */
     private String getSchemaPathForPlatform(String platform) {
         if ("postgres".equalsIgnoreCase(platform) || "postgresql".equalsIgnoreCase(platform)) {

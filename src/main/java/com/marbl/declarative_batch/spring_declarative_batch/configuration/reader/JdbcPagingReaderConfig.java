@@ -10,16 +10,16 @@ import java.util.Map;
 @Data
 public class JdbcPagingReaderConfig implements ReaderConfig {
 
-    @NotBlank(message = "Datasource is required")
+    @NotBlank(message = "'datasource' must be provided")
     private String datasource;
 
-    @NotBlank(message = "PreparedStatementClass is required")
+    @NotBlank(message = "'preparedStatementClass' must be provided")
     private String preparedStatementClass;
 
-    @NotBlank(message = "ProviderType is required")
+    @NotBlank(message = "'providerType' must be provided")
     private PagingProviderType providerType;
 
-    @NotBlank(message = "MappedClass is require")
+    @NotBlank(message = "'mappedClass' must be provided")
     private String mappedClass;
 
     private PagingSqlModel clause;

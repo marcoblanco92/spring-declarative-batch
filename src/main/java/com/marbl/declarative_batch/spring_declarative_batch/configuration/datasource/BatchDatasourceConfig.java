@@ -21,7 +21,7 @@ public class BatchDatasourceConfig {
     @NestedConfigurationProperty
     private BatchProperties batchProperties = new BatchProperties();
 
-    @AssertTrue(message = "Only one datasource can flagged as Main")
+    @AssertTrue(message = "Only one datasource can be flagged as 'Main'")
     public boolean isOnlyOneMainDatasource() {
         if (datasources == null || datasources.isEmpty()) {
             return true;

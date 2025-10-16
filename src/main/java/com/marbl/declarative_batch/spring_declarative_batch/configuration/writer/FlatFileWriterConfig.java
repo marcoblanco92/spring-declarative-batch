@@ -1,12 +1,13 @@
 package com.marbl.declarative_batch.spring_declarative_batch.configuration.writer;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
 
 @Data
 public class FlatFileWriterConfig implements WriterConfig {
 
-    @NotBlank(message = "Resource is required")
+    @NotBlank(message = "'resource' must be provided")
     private String resource;
 
     private String delimiter = ",";
@@ -15,10 +16,9 @@ public class FlatFileWriterConfig implements WriterConfig {
     private String fileHeader;
     private String fileFooter;
 
-    @NotBlank(message = "FieldsName is required")
+    @NotEmpty(message = "'fieldNames' must contain at least one value")
     private String[] fieldNames;
 
-    @NotBlank(message = "mappedClass is required")
+    @NotBlank(message = "'mappedClass' must be provided")
     private String mappedClass;
-
 }
