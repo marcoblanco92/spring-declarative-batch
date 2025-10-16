@@ -6,7 +6,7 @@ import lombok.Data;
 @Data
 public class ParametersValidatorConfig {
 
-    @NotBlank(message = "Name is required")
+    @NotBlank(message = "The name must be provided and cannot be blank")
     private String name;
 
     private boolean validate = false;

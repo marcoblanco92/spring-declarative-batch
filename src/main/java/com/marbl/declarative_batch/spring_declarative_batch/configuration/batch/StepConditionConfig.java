@@ -8,7 +8,7 @@ import lombok.Data;
 public class StepConditionConfig {
 
     private String from;
-    @NotBlank(message = "On condition is required")
+    @NotBlank(message = "'on' condition must be provided")
     private String onCondition;
     private String toStep;
     private boolean isEnded;

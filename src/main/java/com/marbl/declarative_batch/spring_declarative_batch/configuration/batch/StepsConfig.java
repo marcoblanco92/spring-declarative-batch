@@ -3,6 +3,7 @@ package com.marbl.declarative_batch.spring_declarative_batch.configuration.batch
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -15,17 +16,17 @@ import static com.marbl.declarative_batch.spring_declarative_batch.utils.Listene
 @Slf4j
 public class StepsConfig {
 
-    @NotBlank(message = "Step name is required")
+    @NotEmpty(message = "The Step name must be provided and cannot be empty")
     private String name;
     private int chunk = 10;
     @Valid
-    @NotNull(message = "Reader is required")
+    @NotNull(message = "'reader' component must be provided")
     private ComponentConfig reader;
     @Valid
-    @NotNull(message = "Processor is required")
+    @NotNull(message = "'processor' component must be provided")
     private ComponentConfig processor;
     @Valid
-    @NotNull(message = "Writer is required")
+    @NotNull(message = "'writer' component must be provided")
     private ComponentConfig writer;
     @Valid
     private List<ListenerConfig> listeners;
@@ -40,7 +41,7 @@ public class StepsConfig {
     private List<StepConditionConfig> transitions;
 
     // --- Validation for next/transitions ---
-    @AssertTrue(message = "You cannot set both 'next' and 'transitions' at the same time")
+    @AssertTrue(message = "Both 'next' and 'transitions' cannot be set simultaneously")
     public boolean isValidTransitions() {
         if (next != null && transitions != null && !transitions.isEmpty()) {
             log.warn("Step [{}] - Both 'next' [{}] and 'transitions' [{}] are set. Only one is allowed.",
@@ -52,17 +53,17 @@ public class StepsConfig {
 
 
     // --- Processor listener validation ---
-    @AssertTrue(message = "Processor listener name must match processor bean name when processor implements ItemProcessListener")
+    @AssertTrue(message = "Processor listener name must match processor bean name when processor implementing ItemProcessListener")
     public boolean isProcessorListenerValid() {
         return validateListenerMatch(name, processor, listeners, "ItemProcessListener", "Processor");
     }
 
-    @AssertTrue(message = "Reader listener name must match reader bean name when reader implements ItemReadListener")
+    @AssertTrue(message = "Reader listener name must match reader bean name when reader implementing ItemReadListener")
     public boolean isReaderListenerValid() {
         return validateListenerMatch(name, reader, listeners, "ItemReadListener", "Reader");
     }
 
-    @AssertTrue(message = "Writer listener name must match writer bean name when writer implements ItemWriteListener")
+    @AssertTrue(message = "Writer listener name must match writer bean name when writer implementing ItemWriteListener")
     public boolean isWriterListenerValid() {
         return validateListenerMatch(name, writer, listeners, "ItemWriteListener", "Writer");
     }

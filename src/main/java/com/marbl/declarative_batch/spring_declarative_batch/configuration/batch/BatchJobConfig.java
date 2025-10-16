@@ -13,16 +13,15 @@ import java.util.List;
 @ConfigurationProperties(prefix = "bulk.batch-job")
 public class BatchJobConfig {
 
-    @NotEmpty(message = "BatchJob name is required")
+    @NotEmpty(message = "The batch Job name must be provided and cannot be empty")
     private String name;
     @Valid
     private ParametersValidatorConfig validator;
     @Valid
     private ListenerConfig listener;
     @Valid
-    @NotEmpty(message = "BatchJob must have at least one step")
+    @NotEmpty(message = "The batch job must contain at least one step")
     private List<StepsConfig> steps;
-
 
 }
 

@@ -7,10 +7,10 @@ import lombok.Data;
 @Data
 public class ListenerConfig {
 
-    @NotBlank(message = "Listener name is required")
+    @NotBlank(message = "The Listener name must be provided and cannot be blank")
     private String name;
 
-    @NotBlank(message = "Listener type is required")
+    @NotBlank(message = "The Listener type must be provided and cannot be blank")
     private String type;
 
 
@@ -20,7 +20,7 @@ public class ListenerConfig {
      * - if name is null, type must be null
      * - if name is not null, type must be present
      */
-    @AssertTrue(message = "If 'name' is present, 'type' must be provided; if 'name' is absent, 'type' must be null")
+    @AssertTrue(message = "'type' must be provided when 'name' is specified, and must be null when 'name' is absent")
     public boolean isValidNameType() {
         if (name == null || name.isBlank()) {
             return type == null || type.isBlank();
