@@ -45,6 +45,7 @@ public class BatchJobFactory implements JobFactory {
     @Override
     public Job createJob() {
         if (jobConfig == null || jobConfig.getSteps() == null || jobConfig.getSteps().isEmpty()) {
+            log.error("Job config is invalid: must contain at least one step");
             throw new IllegalArgumentException("Job config must contain at least one step");
         }
 
@@ -53,7 +54,7 @@ public class BatchJobFactory implements JobFactory {
         // --- Create steps dynamically from steplets ---
         Map<String, Step> stepsMap = createStepsFromSteplets(jobConfig);
 
-        // --- Build dynamic flow (supports next + conditional) ---
+        // --- Build dynamic flow (supports conditional and next transitions) ---
         Flow mainFlow = buildDynamicFlow(jobConfig, stepsMap);
 
         // --- Initialize JobBuilder ---
@@ -65,9 +66,9 @@ public class BatchJobFactory implements JobFactory {
         // --- Attach Job Parameters Validator if configured ---
         attachJobValidator(jobBuilder, jobConfig);
 
-        // --- Attach Incrementer if applicable ---
+        // --- Attach RunIdIncrementer if applicable ---
         if (runIdIncrementer != null) {
-            log.info("RunIdIncrementer is used, incrementer: {}", runIdIncrementer);
+            log.info("Using RunIdIncrementer: {}", runIdIncrementer.getClass().getSimpleName());
             jobBuilder.incrementer(new DatabaseRunIdIncrementer(jobConfig, jobExplorer));
         }
 
@@ -97,10 +98,11 @@ public class BatchJobFactory implements JobFactory {
                 log.info("Step '{}' created via steplet '{}'", stepConfig.getName(), steplet.getClass().getSimpleName());
             }
         } catch (Exception e) {
+            log.error("Error while creating steps: {}", e.getMessage(), e);
             throw new BatchException("Error while building steps: " + e.getMessage(), e);
         }
 
-        // Warn for unused annotated beans
+        // Warn for unused annotated steplets
         Map<String, Object> annotatedSteplets = context.getBeansWithAnnotation(BulkBatchSteplet.class);
         for (Object bean : annotatedSteplets.values()) {
             BulkBatchSteplet ann = bean.getClass().getAnnotation(BulkBatchSteplet.class);
@@ -116,19 +118,20 @@ public class BatchJobFactory implements JobFactory {
     private Flow buildDynamicFlow(BatchJobConfig jobConfig, Map<String, Step> stepsMap) {
         FlowBuilder<Flow> flowBuilder = new FlowBuilder<>("flow-" + jobConfig.getName());
 
-        // Start dal primo step
+        // Start from first step
         Step firstStep = stepsMap.get(jobConfig.getSteps().get(0).getName());
         flowBuilder.start(firstStep);
 
         for (StepsConfig stepConfig : jobConfig.getSteps()) {
             Step currentStep = stepsMap.get(stepConfig.getName());
 
-            // --- 1️⃣ Conditional transitions ---
+            // --- Conditional transitions ---
             if (stepConfig.getTransitions() != null && !stepConfig.getTransitions().isEmpty()) {
                 for (StepConditionConfig transition : stepConfig.getTransitions()) {
                     Step toStep = stepsMap.get(transition.getToStep());
                     Step fromStep = stepsMap.get(transition.getFrom());
                     if (toStep == null || fromStep == null) {
+                        log.error("Transition references unknown step: {} -> {}", transition.getFrom(), transition.getToStep());
                         throw new IllegalArgumentException("Transition references unknown step: " +
                                 transition.getFrom() + " -> " + transition.getToStep());
                     }
@@ -146,37 +149,37 @@ public class BatchJobFactory implements JobFactory {
                 }
             }
 
-            // --- 2️⃣ Linear 'next' transitions come AFTER le conditional ---
+            // --- Linear 'next' transitions ---
             if (stepConfig.getNext() != null && !stepConfig.getNext().isEmpty()) {
                 Step nextStep = stepsMap.get(stepConfig.getNext());
                 if (nextStep == null) {
+                    log.error("Next step '{}' not found for step '{}'", stepConfig.getNext(), currentStep.getName());
                     throw new IllegalArgumentException("Next step not found: " + stepConfig.getNext());
                 }
 
                 log.info("Adding linear transition: {} --*--> {}", currentStep.getName(), nextStep.getName());
 
-                // Usa wildcard "*" per fallback dopo le transizioni condizionali
                 flowBuilder.from(currentStep)
                         .on("*")
                         .to(nextStep);
             }
         }
 
-        // --- 3️⃣ Opzionale: fallback globale per tutti i branch non gestiti ---
+        // --- Global fallback for all unhandled exit statuses ---
         for (StepsConfig stepConfig : jobConfig.getSteps()) {
             Step currentStep = stepsMap.get(stepConfig.getName());
             flowBuilder.from(currentStep)
                     .on("*")
-                    .end(); // termina il flow per tutti gli exit status non catturati
+                    .end();
         }
 
         return flowBuilder.end();
     }
 
-
     private void attachJobListener(JobBuilder jobBuilder, BatchJobConfig jobConfig) {
         ListenerConfig jobListenerConfig = jobConfig.getListener();
         if (jobListenerConfig == null || jobListenerConfig.getName() == null) {
+            log.debug("No JobExecutionListener configured for job '{}'", jobConfig.getName());
             return;
         }
 
@@ -187,6 +190,7 @@ public class BatchJobFactory implements JobFactory {
             log.info("Attached JobExecutionListener '{}' to job '{}'",
                     jobListenerConfig.getName(), jobConfig.getName());
         } catch (Exception e) {
+            log.error("Invalid JobExecutionListener bean '{}': {}", jobListenerConfig.getName(), e.getMessage(), e);
             throw new IllegalArgumentException(
                     "Invalid JobExecutionListener bean: " + jobListenerConfig.getName(), e);
         }
@@ -195,6 +199,7 @@ public class BatchJobFactory implements JobFactory {
     private void attachJobValidator(JobBuilder jobBuilder, BatchJobConfig jobConfig) {
         ParametersValidatorConfig validatorConfig = jobConfig.getValidator();
         if (validatorConfig == null || !validatorConfig.isValidate()) {
+            log.debug("No JobParametersValidator configured for job '{}'", jobConfig.getName());
             return;
         }
 
@@ -202,9 +207,11 @@ public class BatchJobFactory implements JobFactory {
         Object validatorBean = validators.get(validatorConfig.getName());
 
         if (validatorBean == null) {
+            log.error("No BulkBatchValidator bean found with name '{}'", validatorConfig.getName());
             throw new IllegalArgumentException("No BulkBatchValidator bean found with name: " + validatorConfig.getName());
         }
         if (!(validatorBean instanceof JobParametersValidator)) {
+            log.error("Bean '{}' is not a JobParametersValidator", validatorConfig.getName());
             throw new IllegalArgumentException("Bean '" + validatorConfig.getName() + "' is not a JobParametersValidator");
         }
 
@@ -219,11 +226,14 @@ public class BatchJobFactory implements JobFactory {
             BulkBatchSteplet ann = bean.getClass().getAnnotation(BulkBatchSteplet.class);
             if (config.getName().equals(ann.name())) {
                 if (!(bean instanceof AbstractSteplet<?, ?>)) {
+                    log.error("Bean annotated with @BulkBatchSteplet must extend AbstractSteplet: {}", bean.getClass());
                     throw new IllegalStateException("Bean annotated with @BulkBatchSteplet must extend AbstractSteplet: " + bean.getClass());
                 }
+                log.debug("Resolved steplet bean '{}' for step '{}'", bean.getClass().getSimpleName(), config.getName());
                 return (AbstractSteplet<?, ?>) bean;
             }
         }
+        log.error("No steplet bean found for step name '{}'", config.getName());
         throw new IllegalArgumentException("No steplet bean found for step name: " + config.getName());
     }
 }

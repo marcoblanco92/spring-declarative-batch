@@ -21,7 +21,6 @@ public class ReaderFactory {
 
     private final ApplicationContext context;
 
-    // Reader types -> expected class
     private static final Map<String, Class<?>> READER_TYPES = Map.of(
             "FlatFileItemReader", FlatFileItemReader.class,
             "JdbcPagingItemReader", org.springframework.batch.item.database.JdbcPagingItemReader.class,
@@ -35,33 +34,69 @@ public class ReaderFactory {
     }
 
     /**
-     * Create a typed ItemReader<I> based on config or Spring context.
+     * Creates a typed ItemReader<I> based on configuration or Spring context.
      */
     @SuppressWarnings("unchecked")
     public <I> ItemReader<I> createReader(ComponentConfig config, int chunk) throws Exception {
 
         if (!StringUtils.hasText(config.getType())) {
+            log.error("Reader creation failed: 'type' field is empty in ComponentConfig");
             throw new IllegalArgumentException("Reader type must be provided");
         }
 
-        // 2️⃣ Build a new reader using Java 17 switch expression
-        ItemReader<I> reader = switch (config.getType()) {
-            case "FlatFileItemReader" -> FlatFileReaderBuilder.build(config);
-            case "JdbcCursorItemReader" -> JdbcCursorReaderBuilder.build(config, context);
-            case "JdbcPagingItemReader" -> JdbcPagingReaderBuilder.build(config,context, chunk);
-            // case "MongoCursorItemReader" -> MongoCursorReaderBuilder.<I>build(config, context);
-            default -> throw new TypeNotSupportedException("Unknown reader type: " + config.getType());
-        };
+        String readerType = config.getType();
+        log.debug("Starting reader creation: type='{}' for component '{}'", readerType, config.getName());
 
-        log.debug("Created new reader of type '{}'", config.getType());
-        return reader;
+        ItemReader<I> reader;
+        try {
+            reader = switch (readerType) {
+                case "FlatFileItemReader" -> {
+                    log.debug("Using FlatFileReaderBuilder for component '{}'", config.getName());
+                    yield FlatFileReaderBuilder.build(config);
+                }
+                case "JdbcCursorItemReader" -> {
+                    log.debug("Using JdbcCursorReaderBuilder for component '{}'", config.getName());
+                    yield JdbcCursorReaderBuilder.build(config, context);
+                }
+                case "JdbcPagingItemReader" -> {
+                    log.debug("Using JdbcPagingReaderBuilder with chunk size '{}' for component '{}'", chunk, config.getName());
+                    yield JdbcPagingReaderBuilder.build(config, context, chunk);
+                }
+                // case "MongoCursorItemReader" -> {
+                //     log.debug("Using MongoCursorReaderBuilder for component '{}'", config.getName());
+                //     yield MongoCursorReaderBuilder.<I>build(config, context);
+                // }
+                default -> {
+                    log.error("Unsupported reader type: '{}'", readerType);
+                    throw new TypeNotSupportedException("Unknown reader type: " + readerType);
+                }
+            };
+
+            log.info("Reader '{}' successfully created for type '{}'", config.getName(), readerType);
+            log.debug("Reader '{}' of type '{}' initialized with configuration: {}",
+                    config.getName(), readerType, config);
+
+            return reader;
+
+        } catch (Exception e) {
+            log.error("Error creating reader '{}' of type '{}': {}",
+                    config.getName(), readerType, e.getMessage(), e);
+            throw e;
+        }
     }
 
-
-
+    /**
+     * Checks whether a bean is compatible with the specified reader type.
+     */
     public boolean isAllowedReader(Object bean, String type) {
         Class<?> expected = READER_TYPES.get(type);
-        if (expected == null) throw new TypeNotSupportedException("Unknown reader type: " + type);
-        return expected.isInstance(bean);
+        if (expected == null) {
+            log.error("Validation failed: unknown reader type '{}'", type);
+            throw new TypeNotSupportedException("Unknown reader type: " + type);
+        }
+
+        boolean compatible = expected.isInstance(bean);
+        log.debug("Reader type check '{}': bean={} compatible={}", type, bean.getClass().getSimpleName(), compatible);
+        return compatible;
     }
 }
