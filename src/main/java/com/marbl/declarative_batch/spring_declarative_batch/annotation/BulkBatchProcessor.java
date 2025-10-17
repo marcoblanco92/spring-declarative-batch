@@ -1,12 +1,10 @@
 package com.marbl.declarative_batch.spring_declarative_batch.annotation;
 
-import org.springframework.stereotype.Component;
-
 import java.lang.annotation.*;
 
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
 @Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD, ElementType.TYPE})
 public @interface BulkBatchProcessor {
     String name();
 }
