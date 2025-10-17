@@ -1,6 +1,5 @@
 package com.marbl.declarative_batch.spring_declarative_batch.builder.reader;
 
-
 import com.marbl.declarative_batch.spring_declarative_batch.configuration.batch.ComponentConfig;
 import com.marbl.declarative_batch.spring_declarative_batch.configuration.reader.FlatFileReaderConfig;
 import com.marbl.declarative_batch.spring_declarative_batch.utils.MapUtils;
@@ -14,20 +13,31 @@ import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
 import org.springframework.core.io.Resource;
 
+/**
+ * Factory builder responsible for creating and configuring {@link FlatFileItemReader}
+ * instances from declarative {@link ComponentConfig} definitions.
+ */
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class FlatFileReaderBuilder {
 
+    /**
+     * Builds a fully configured {@link FlatFileItemReader} instance based on the provided {@link ComponentConfig}.
+     *
+     * @param config The declarative component configuration
+     * @param <I>    The target item type
+     * @return Configured {@link FlatFileItemReader} instance
+     */
     public static <I> FlatFileItemReader<I> build(ComponentConfig config) {
+        log.debug("Building FlatFileItemReader for component '{}'", config.getName());
 
-        // Normalize the map structure (convert numeric-keyed maps to lists)
+        // Normalize nested map structures (convert indexed maps into lists, etc.)
         Object normalizedMap = MapUtils.normalizeMapStructure(config.getConfig());
-        log.debug("Normalized configuration map for FlatFileReader: {}", normalizedMap);
+        log.debug("Normalized configuration map: {}", normalizedMap);
 
-        // Convert normalized map to the target DTO
+        // Map normalized configuration into DTO
         FlatFileReaderConfig flatConfig = MapUtils.mapToConfigDto(normalizedMap, FlatFileReaderConfig.class);
-        log.debug("Converted configuration map to FlatFileReaderConfig DTO: {}", flatConfig);
-
+        log.debug("Mapped FlatFileReaderConfig DTO: {}", flatConfig);
 
         try {
             FlatFileItemReader<I> reader = new FlatFileItemReader<>();
@@ -37,7 +47,7 @@ public class FlatFileReaderBuilder {
             reader.setResource(resource);
             reader.setLinesToSkip(flatConfig.getLineToSkip());
 
-            // --- Configure LineMapper ---
+            // Configure LineMapper
             DefaultLineMapper<I> lineMapper = new DefaultLineMapper<>();
 
             DelimitedLineTokenizer tokenizer = new DelimitedLineTokenizer();
@@ -51,18 +61,29 @@ public class FlatFileReaderBuilder {
 
             lineMapper.setLineTokenizer(tokenizer);
             lineMapper.setFieldSetMapper(fieldSetMapper);
-
             reader.setLineMapper(lineMapper);
+
             reader.afterPropertiesSet();
 
-            log.info("FlatFileItemReader '{}' created for resource '{}'", config.getName(), flatConfig.getResource());
-
+            log.info("FlatFileItemReader '{}' successfully created for resource '{}'",
+                    config.getName(), flatConfig.getResource());
             return reader;
 
         } catch (ClassNotFoundException e) {
-            throw new IllegalArgumentException("Mapped class not found: " + flatConfig.getMappedClass(), e);
+            String errorMsg = String.format(
+                    "Invalid FlatFileReader configuration: mapped class '%s' not found for component '%s'",
+                    flatConfig.getMappedClass(), config.getName()
+            );
+            log.error(errorMsg, e);
+            throw new IllegalArgumentException(errorMsg, e);
+
         } catch (Exception e) {
-            throw new IllegalArgumentException("Failed to create FlatFileItemReader for config=" + config.getName(), e);
+            String errorMsg = String.format(
+                    "Failed to initialize FlatFileItemReader for component '%s': %s",
+                    config.getName(), e.getMessage()
+            );
+            log.error(errorMsg, e);
+            throw new IllegalArgumentException(errorMsg, e);
         }
     }
 }

@@ -11,50 +11,77 @@ import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor;
 import org.springframework.batch.item.file.transform.DelimitedLineAggregator;
 import org.springframework.core.io.FileSystemResource;
 
+/**
+ * Builder responsible for creating and configuring a {@link FlatFileItemWriter}
+ * based on a declarative {@link ComponentConfig}.
+ *
+ * <p>Supports configuration of file resource, header/footer callbacks,
+ * and field extraction for delimited files.</p>
+ */
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class FlatFileWriterBuilder {
 
+    /**
+     * Builds and configures a {@link FlatFileItemWriter} instance.
+     *
+     * @param config Declarative component configuration
+     * @param <O>    Output type handled by the writer
+     * @return Configured {@link FlatFileItemWriter}
+     */
     public static <O> FlatFileItemWriter<O> build(ComponentConfig config) {
         try {
+            log.info("🧩 Building FlatFileItemWriter for component: {}", config.getName());
 
             // Normalize the map structure (convert numeric-keyed maps to lists)
             Object normalizedMap = MapUtils.normalizeMapStructure(config.getConfig());
             log.debug("Normalized configuration map for FlatFileWriter: {}", normalizedMap);
-            // Convert normalized map to the target DTO
-            FlatFileWriterConfig flatConfig = MapUtils.mapToConfigDto(normalizedMap, FlatFileWriterConfig.class);
-            log.debug("Converted configuration map to FlatFileWriterConfig DTO: {}", flatConfig);
 
+            // Convert normalized map to configuration DTO
+            FlatFileWriterConfig flatConfig = MapUtils.mapToConfigDto(normalizedMap, FlatFileWriterConfig.class);
+            log.debug("Mapped configuration to FlatFileWriterConfig DTO: {}", flatConfig);
+
+            // Create writer instance
             FlatFileItemWriter<O> writer = new FlatFileItemWriter<>();
             writer.setName(config.getName());
-
             writer.setResource(new FileSystemResource(flatConfig.getResource()));
             writer.setAppendAllowed(true);
 
-            //Header
-            if(flatConfig.getFileHeader() != null)
+            // Header
+            if (flatConfig.getFileHeader() != null) {
                 writer.setHeaderCallback(w -> w.write(flatConfig.getFileHeader()));
-            //Footer
-            if(flatConfig.getFileFooter() != null)
-                writer.setFooterCallback(w -> w.write(flatConfig.getFileFooter()));
+                log.debug("Configured file header: {}", flatConfig.getFileHeader());
+            }
 
-            // Line Aggregator
+            // Footer
+            if (flatConfig.getFileFooter() != null) {
+                writer.setFooterCallback(w -> w.write(flatConfig.getFileFooter()));
+                log.debug("Configured file footer: {}", flatConfig.getFileFooter());
+            }
+
+            // Line aggregator
             DelimitedLineAggregator<O> lineAggregator = new DelimitedLineAggregator<>();
             lineAggregator.setDelimiter(flatConfig.getDelimiter());
 
+            // Field extractor
             BeanWrapperFieldExtractor<O> fieldExtractor = new BeanWrapperFieldExtractor<>();
             fieldExtractor.setNames(flatConfig.getFieldNames());
             lineAggregator.setFieldExtractor(fieldExtractor);
 
             writer.setLineAggregator(lineAggregator);
-
             writer.afterPropertiesSet();
 
+            log.info("Successfully built FlatFileItemWriter for component: {}", config.getName());
             return writer;
+
         } catch (Exception e) {
-            throw new IllegalArgumentException(
-                    "Failed to create FlatFileWriterConfig for config=" + config.getName(), e
+            String errorMsg = String.format(
+                    "Failed to create FlatFileItemWriter for component '%s': %s",
+                    config.getName(),
+                    e.getMessage()
             );
+            log.error(errorMsg, e);
+            throw new IllegalArgumentException(errorMsg, e);
         }
     }
 }
