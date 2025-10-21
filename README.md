@@ -1,6 +1,6 @@
 # spring-declarative-batch
 
-**spring-declarative-batch** è un progetto proof-of-concept (PoC) che mira a semplificare e standardizzare lo sviluppo di processi batch in ambito aziendale. Basato su **Spring Batch 5.2.3** e **Java 17+**, il progetto sfrutta un approccio dichiarativo per la configurazione e l'esecuzione dei job batch.
+**spring-declarative-batch** è un progetto proof-of-concept (PoC) che mira a semplificare e standardizzare lo sviluppo di processi batch in ambito aziendale. Basato su **Spring Batch 5+** e **Java 17+**, il progetto sfrutta un approccio dichiarativo per la configurazione e l'esecuzione dei job batch.
 
 ---
 
@@ -136,163 +136,15 @@ batch-job:
       next: secondStep
 ```
 
+---
+
 ## Componenti per la Configurazione dei Batch
 
 Oltre alla configurazione YAML, il framework mette a disposizione alcune componenti utili per creare step, tasklet e listener in modo dichiarativo, tramite annotazioni e factory.
 
 ---
 
-### 1. Annotazioni per Step e Tasklet
-
-Le annotazioni semplificano l’integrazione dei componenti nello Spring Context e nel batch:
-
-#### `@BulkBatchSteplet`
-
-Annotazione utilizzata per marcare un **Steplet**, cioè uno step chunk-oriented.
-
-```java
-@Documented
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD, ElementType.TYPE})
-public @interface BulkBatchSteplet {
-    String name();
-}
-```
-#### `@BulkBatchTasklet`
-
-Annotazione utilizzata per marcare un Tasklet, cioè uno step di tipo tasklet-oriented.
-
-```java
-@Documented
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD, ElementType.TYPE})
-public @interface BulkBatchTasklet {
-    String name();
-}
-```
-
-### 2. Creazione degli Step tramite `AbstractSteplet`
-
-Gli **Steplet** sono componenti che estendono la classe `AbstractSteplet` per costruire automaticamente uno step Spring Batch utilizzando la `StepFactory`. Questo approccio permette di mappare direttamente la configurazione YAML sui componenti del batch senza scrivere codice aggiuntivo per la creazione dello step.
-
-#### Funzionalità principali di `AbstractSteplet`:
-
-- **Costruzione automatica dello step**: utilizza la `StepFactory` per creare lo step completo con reader, processor e writer.
-- **Gestione della configurazione**: legge la configurazione dello step dal file YAML tramite `StepsConfig`.
-- **Logging integrato**: registra la costruzione dello step e eventuali errori, facilitando il debug.
-- **Validazione**: verifica che la configurazione dello step sia presente, altrimenti genera un’eccezione.
-
-#### Esempio di implementazione
-
-```java
-@Slf4j
-@RequiredArgsConstructor
-public abstract class AbstractSteplet<I, O> implements StepComponent<I, O> {
-
-    private final StepFactory stepFactory;
-
-    @Setter
-    private StepsConfig config;
-
-    /**
-     * Build the Spring Batch Step using StepFactory.
-     */
-    public Step buildStep() throws Exception {
-        StepsConfig cfg = getConfig();
-        log.info("Building step '{}' via AbstractSteplet '{}'", cfg.getName(), this.getClass().getSimpleName());
-
-        Step step = stepFactory.createStep(
-                cfg,
-                reader(),
-                processor(),
-                writer()
-        );
-
-        log.info("Step '{}' built successfully via AbstractSteplet '{}'", cfg.getName(), this.getClass().getSimpleName());
-        return step;
-    }
-
-    /**
-     * Get StepsConfig, ensuring it is set.
-     */
-    protected StepsConfig getConfig() {
-        if (config == null) {
-            log.error("StepsConfig not set in AbstractSteplet '{}'", this.getClass().getSimpleName());
-            throw new IllegalStateException("StepsConfig not set");
-        }
-        log.debug("Retrieved StepsConfig for step '{}'", config.getName());
-        return config;
-    }
-}
-```
-
-### 3. Creazione degli Step tramite `StepFactory`
-
-La **`StepFactory`** è il componente centrale che costruisce uno step Spring Batch a partire dalla configurazione dichiarativa (`StepsConfig`) e dai componenti forniti (reader, processor, writer). Questo approccio consente di centralizzare la logica di costruzione e di applicare comportamenti comuni come logging e fault tolerance.
-
-#### Funzionalità principali:
-
-1. **Validazione dei componenti**: verifica che reader, processor e writer siano correttamente configurati prima di costruire lo step.
-2. **Creazione o riuso dei componenti tipizzati**: se i componenti non vengono passati dallo Steplet, la factory li crea tramite readerFactory, processorFactory e writerFactory.
-3. **Costruzione dello step chunk-oriented**: utilizza `StepBuilder` e `SimpleStepBuilder` per definire chunk, transaction manager, reader, processor e writer.
-4. **Attacco dei listener comuni**: applica listener di logging standard e listener definiti nel YAML.
-5. **Configurazione della tolleranza agli errori**: supporta retry, skip e transazioni se definiti nella configurazione dello step.
-
-#### Esempio di metodo `createStep`
-
-```java
-public <I, O> Step createStep(StepsConfig config,
-                              ItemReader<I> reader,
-                              ItemProcessor<I, O> processor,
-                              ItemWriter<O> writer) throws Exception {
-
-    log.info("Creating step '{}'", config.getName());
-
-    // --- Validate components passed from Steplet ---
-    validateReader(reader, config);
-    validateProcessor(processor, config);
-    validateWriter(writer, config);
-
-    // --- Build or reuse typed components ---
-    ItemReader<I> finalReader = reader != null
-            ? reader
-            : readerFactory.createReader(config.getReader(), config.getChunk());
-
-    ItemProcessor<I, O> finalProcessor = processor != null
-            ? processor
-            : processorFactory.createProcessor(config.getProcessor());
-
-    ItemWriter<O> finalWriter = writer != null
-            ? writer
-            : writerFactory.createWriter(config.getWriter());
-
-    // --- Build chunk step ---
-    StepBuilder stepBuilder = new StepBuilder(config.getName(), jobRepository);
-    SimpleStepBuilder<I, O> chunkStep = stepBuilder
-            .<I, O>chunk(config.getChunk(), transactionManager)
-            .reader(finalReader)
-            .processor(finalProcessor)
-            .writer(finalWriter);
-
-    // --- Attach common logging listener ---
-    chunkStep.listener((StepExecutionListener) loggingStepListener);
-    chunkStep.listener((ChunkListener) loggingStepListener);
-
-    // --- Attach additional listeners from YAML config ---
-    attachStepListeners(chunkStep, config);
-
-    // --- Configure fault tolerance if defined ---
-    if (config.getRetry() != null || config.getSkip() != null || config.getTransaction() != null) {
-        chunkStep = configureFaultTolerance(chunkStep, config);
-    }
-
-    Step step = chunkStep.build();
-    log.info("Step '{}' created successfully", config.getName());
-    return step;
-}
-```
-
-### 4. Creazione dinamica dei Job e degli Step
+### 1. Creazione dinamica dei Job e degli Step
 
 Il framework consente di creare i **job Spring Batch** dinamicamente a partire dalla configurazione YAML. Il cuore della logica risiede nella combinazione di:
 
@@ -302,7 +154,7 @@ Il framework consente di creare i **job Spring Batch** dinamicamente a partire d
 
 ---
 
-#### 4.1 Creazione del Job
+#### 1.1 Creazione del Job
 
 Il metodo `createJob()`:
 
@@ -339,7 +191,7 @@ public Job createJob() {
 }
 ```
 
-#### 4.2 Creazione degli Step dai Steplet
+#### 1.2 Creazione degli Step dai Steplet
 
 Il metodo `createStepsFromSteplets(jobConfig)` gestisce la creazione di tutti gli step definiti nella configurazione YAML, supportando sia:
 
@@ -413,7 +265,7 @@ private Map<String, Step> createStepsFromSteplets(BatchJobConfig jobConfig) {
 }
 ```
 
-#### 4.3 Costruzione del flusso dinamico dei Job
+#### 1.3 Costruzione del flusso dinamico dei Job
 
 Il metodo `buildDynamicFlow(jobConfig, stepsMap)` genera dinamicamente il flusso tra gli step del job, gestendo sia transizioni lineari (`next`) sia condizionali (`on-condition`). Questo permette di creare job complessi completamente configurabili tramite YAML, senza scrivere codice Java aggiuntivo.
 
@@ -490,3 +342,225 @@ private Flow buildDynamicFlow(BatchJobConfig jobConfig, Map<String, Step> stepsM
     return flowBuilder.end();
 }
 ```
+
+---
+
+### 2. Creazione degli Step tramite `StepFactory`
+
+La **`StepFactory`** è il componente centrale che costruisce uno step Spring Batch a partire dalla configurazione dichiarativa (`StepsConfig`) e dai componenti forniti (reader, processor, writer). Questo approccio consente di centralizzare la logica di costruzione e di applicare comportamenti comuni come logging e fault tolerance.
+
+#### Funzionalità principali:
+
+1. **Validazione dei componenti**: verifica che reader, processor e writer siano correttamente configurati prima di costruire lo step.
+2. **Creazione o riuso dei componenti tipizzati**: se i componenti non vengono passati dallo Steplet, la factory li crea tramite readerFactory, processorFactory e writerFactory.
+3. **Costruzione dello step chunk-oriented**: utilizza `StepBuilder` e `SimpleStepBuilder` per definire chunk, transaction manager, reader, processor e writer.
+4. **Attacco dei listener comuni**: applica listener di logging standard e listener definiti nel YAML.
+5. **Configurazione della tolleranza agli errori**: supporta retry, skip e transazioni se definiti nella configurazione dello step.
+
+#### Esempio di metodo `createStep`
+
+```java
+public <I, O> Step createStep(StepsConfig config,
+                              ItemReader<I> reader,
+                              ItemProcessor<I, O> processor,
+                              ItemWriter<O> writer) throws Exception {
+
+    log.info("Creating step '{}'", config.getName());
+
+    // --- Validate components passed from Steplet ---
+    validateReader(reader, config);
+    validateProcessor(processor, config);
+    validateWriter(writer, config);
+
+    // --- Build or reuse typed components ---
+    ItemReader<I> finalReader = reader != null
+            ? reader
+            : readerFactory.createReader(config.getReader(), config.getChunk());
+
+    ItemProcessor<I, O> finalProcessor = processor != null
+            ? processor
+            : processorFactory.createProcessor(config.getProcessor());
+
+    ItemWriter<O> finalWriter = writer != null
+            ? writer
+            : writerFactory.createWriter(config.getWriter());
+
+    // --- Build chunk step ---
+    StepBuilder stepBuilder = new StepBuilder(config.getName(), jobRepository);
+    SimpleStepBuilder<I, O> chunkStep = stepBuilder
+            .<I, O>chunk(config.getChunk(), transactionManager)
+            .reader(finalReader)
+            .processor(finalProcessor)
+            .writer(finalWriter);
+
+    // --- Attach common logging listener ---
+    chunkStep.listener((StepExecutionListener) loggingStepListener);
+    chunkStep.listener((ChunkListener) loggingStepListener);
+
+    // --- Attach additional listeners from YAML config ---
+    attachStepListeners(chunkStep, config);
+
+    // --- Configure fault tolerance if defined ---
+    if (config.getRetry() != null || config.getSkip() != null || config.getTransaction() != null) {
+        chunkStep = configureFaultTolerance(chunkStep, config);
+    }
+
+    Step step = chunkStep.build();
+    log.info("Step '{}' created successfully", config.getName());
+    return step;
+}
+```
+
+---
+
+### 3. Creazione degli Step tramite `AbstractSteplet`
+
+Gli **Steplet** sono componenti che estendono la classe `AbstractSteplet` per costruire automaticamente uno step Spring Batch utilizzando la `StepFactory`. Questo approccio permette di mappare direttamente la configurazione YAML sui componenti del batch senza scrivere codice aggiuntivo per la creazione dello step.
+
+#### Funzionalità principali di `AbstractSteplet`:
+
+- **Costruzione automatica dello step**: utilizza la `StepFactory` per creare lo step completo con reader, processor e writer.
+- **Gestione della configurazione**: legge la configurazione dello step dal file YAML tramite `StepsConfig`.
+- **Logging integrato**: registra la costruzione dello step e eventuali errori, facilitando il debug.
+- **Validazione**: verifica che la configurazione dello step sia presente, altrimenti genera un’eccezione.
+
+#### Esempio di implementazione
+
+```java
+@Slf4j
+@RequiredArgsConstructor
+public abstract class AbstractSteplet<I, O> implements StepComponent<I, O> {
+
+    private final StepFactory stepFactory;
+
+    @Setter
+    private StepsConfig config;
+
+    /**
+     * Build the Spring Batch Step using StepFactory.
+     */
+    public Step buildStep() throws Exception {
+        StepsConfig cfg = getConfig();
+        log.info("Building step '{}' via AbstractSteplet '{}'", cfg.getName(), this.getClass().getSimpleName());
+
+        Step step = stepFactory.createStep(
+                cfg,
+                reader(),
+                processor(),
+                writer()
+        );
+
+        log.info("Step '{}' built successfully via AbstractSteplet '{}'", cfg.getName(), this.getClass().getSimpleName());
+        return step;
+    }
+
+    /**
+     * Get StepsConfig, ensuring it is set.
+     */
+    protected StepsConfig getConfig() {
+        if (config == null) {
+            log.error("StepsConfig not set in AbstractSteplet '{}'", this.getClass().getSimpleName());
+            throw new IllegalStateException("StepsConfig not set");
+        }
+        log.debug("Retrieved StepsConfig for step '{}'", config.getName());
+        return config;
+    }
+}
+```
+
+---
+
+### 4. Annotazioni
+
+Le annotazioni semplificano l’integrazione dei componenti nello Spring Context e nel batch:
+
+#### `@BulkBatchSteplet`
+
+Annotazione utilizzata per marcare un **Steplet**, cioè uno step chunk-oriented.
+
+```java
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD, ElementType.TYPE})
+public @interface BulkBatchSteplet {
+    String name();
+}
+```
+#### `@BulkBatchTasklet`
+
+Annotazione utilizzata per marcare un Tasklet, cioè uno step di tipo tasklet-oriented.
+
+```java
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD, ElementType.TYPE})
+public @interface BulkBatchTasklet {
+    String name();
+}
+```
+
+#### `@BulkBatchReader`
+
+Annotazione utilizzata per marcare un Reader.
+
+```java
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD, ElementType.TYPE})
+public @interface BulkBatchReader {
+  String name();
+}
+```
+
+#### `@BulkBatchProcessor`
+
+Annotazione utilizzata per marcare un Processor.
+
+```java
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD, ElementType.TYPE})
+public @interface BulkBatchProcessor {
+  String name();
+}
+```
+
+#### `@BulkBatchWriter`
+
+Annotazione utilizzata per marcare un Writer.
+
+```java
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD, ElementType.TYPE})
+public @interface BulkBatchWriter {
+  String name();
+}
+```
+
+#### `@BulkBatchListener`
+
+Annotazione utilizzata per marcare un Listener.
+
+```java
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD, ElementType.TYPE})
+public @interface BulkBatchListener {
+  String name();
+}
+```
+
+#### `@BulkBatchValidator`
+
+Annotazione utilizzata per marcare l'input param Validator.
+
+```java
+@Qualifier
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD, ElementType.TYPE})
+public @interface BulkBatchValidator {
+}
+```
+
