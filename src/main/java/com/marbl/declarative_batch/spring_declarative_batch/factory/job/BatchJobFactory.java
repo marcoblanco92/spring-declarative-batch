@@ -1,6 +1,7 @@
 package com.marbl.declarative_batch.spring_declarative_batch.factory.job;
 
 import com.marbl.declarative_batch.spring_declarative_batch.annotation.BulkBatchSteplet;
+import com.marbl.declarative_batch.spring_declarative_batch.annotation.BulkBatchTasklet;
 import com.marbl.declarative_batch.spring_declarative_batch.annotation.BulkBatchValidator;
 import com.marbl.declarative_batch.spring_declarative_batch.configuration.batch.*;
 import com.marbl.declarative_batch.spring_declarative_batch.exception.BatchException;
@@ -19,9 +20,12 @@ import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.job.flow.Flow;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.repository.JobRepository;
+import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.context.ApplicationContext;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -36,6 +40,7 @@ public class BatchJobFactory implements JobFactory {
     private final JobExplorer jobExplorer;
     private final ApplicationContext context;
     private final @Nullable RunIdIncrementer runIdIncrementer;
+    private final PlatformTransactionManager transactionManager;
 
     @Override
     public String getJobName() {
@@ -91,18 +96,35 @@ public class BatchJobFactory implements JobFactory {
 
         try {
             for (StepsConfig stepConfig : jobConfig.getSteps()) {
-                AbstractSteplet<?, ?> steplet = resolveStepletBean(stepConfig);
-                steplet.setConfig(stepConfig);
-                Step step = steplet.buildStep();
+                Step step;
+
+                if (stepConfig.getType() == StepsConfig.StepType.TASKLET) {
+                    // --- TASKLET handling ---
+                    Tasklet taskletBean = resolveTaskletBean(stepConfig);
+                    step = new StepBuilder(stepConfig.getName(), jobRepository)
+                            .tasklet(taskletBean, transactionManager)
+                            .build();
+
+                    log.info("Tasklet step '{}' created with tasklet bean '{}'",
+                            stepConfig.getName(), taskletBean.getClass().getSimpleName());
+                } else {
+                    // --- Regular STEP (via steplet) ---
+                    AbstractSteplet<?, ?> steplet = resolveStepletBean(stepConfig);
+                    steplet.setConfig(stepConfig);
+                    step = steplet.buildStep();
+
+                    log.info("Chunk-oriented step '{}' created via steplet '{}'",
+                            stepConfig.getName(), steplet.getClass().getSimpleName());
+                }
+
                 stepsMap.put(stepConfig.getName(), step);
-                log.info("Step '{}' created via steplet '{}'", stepConfig.getName(), steplet.getClass().getSimpleName());
             }
         } catch (Exception e) {
             log.error("Error while creating steps: {}", e.getMessage(), e);
             throw new BatchException("Error while building steps: " + e.getMessage(), e);
         }
 
-        // Warn for unused annotated steplets
+        // --- Warn for unused annotated steplets ---
         Map<String, Object> annotatedSteplets = context.getBeansWithAnnotation(BulkBatchSteplet.class);
         for (Object bean : annotatedSteplets.values()) {
             BulkBatchSteplet ann = bean.getClass().getAnnotation(BulkBatchSteplet.class);
@@ -112,8 +134,19 @@ public class BatchJobFactory implements JobFactory {
             }
         }
 
+        // --- Warn for unused annotated tasklets ---
+        Map<String, Object> annotatedTasklets = context.getBeansWithAnnotation(BulkBatchTasklet.class);
+        for (Object bean : annotatedTasklets.values()) {
+            BulkBatchTasklet ann = bean.getClass().getAnnotation(BulkBatchTasklet.class);
+            if (!stepsMap.containsKey(ann.name())) {
+                log.warn("Annotated tasklet bean '{}' ({}) is not used in YAML configuration",
+                        ann.name(), bean.getClass().getSimpleName());
+            }
+        }
+
         return stepsMap;
     }
+
 
     private Flow buildDynamicFlow(BatchJobConfig jobConfig, Map<String, Step> stepsMap) {
         FlowBuilder<Flow> flowBuilder = new FlowBuilder<>("flow-" + jobConfig.getName());
@@ -236,4 +269,23 @@ public class BatchJobFactory implements JobFactory {
         log.error("No steplet bean found for step name '{}'", config.getName());
         throw new IllegalArgumentException("No steplet bean found for step name: " + config.getName());
     }
+
+    private Tasklet resolveTaskletBean(StepsConfig config) {
+        Map<String, Object> beans = context.getBeansWithAnnotation(BulkBatchTasklet.class);
+        for (Object bean : beans.values()) {
+            BulkBatchTasklet ann = bean.getClass().getAnnotation(BulkBatchTasklet.class);
+            if (config.getTasklet().equals(ann.name())) {
+                if (!(bean instanceof Tasklet)) {
+                    log.error("Bean annotated with @BulkBatchTasklet must implement Tasklet: {}", bean.getClass());
+                    throw new IllegalStateException("Bean annotated with @BulkBatchTasklet must implement Tasklet: " + bean.getClass());
+                }
+                log.debug("Resolved tasklet bean '{}' for step '{}'", bean.getClass().getSimpleName(), config.getName());
+                return (Tasklet) bean;
+            }
+        }
+
+        log.error("No tasklet bean found for tasklet name '{}'", config.getTasklet());
+        throw new IllegalArgumentException("No tasklet bean found for tasklet name: " + config.getTasklet());
+    }
+
 }

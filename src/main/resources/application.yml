@@ -112,7 +112,13 @@ bulk:
           - from: pocStep2
             on-condition: COMPLETED_WITH_INTEGRATION
             to-step: customStep
-            ended: true
+      - name: pocTaskletStep
+        type: TASKLET
+        tasklet: pocTasklet
+        transitions:
+          - from: customStep
+            on-condition: "*"
+            to-step: pocTaskletStep
 
 
 logging:

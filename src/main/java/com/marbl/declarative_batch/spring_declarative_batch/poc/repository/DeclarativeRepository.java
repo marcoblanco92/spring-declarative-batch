@@ -26,4 +26,6 @@ public class DeclarativeRepository {
 
         return Collections.singletonList(declarativeNamedParameterJdbcTemplate.queryForObject(sql, params, String.class));
     }
+
+
 }

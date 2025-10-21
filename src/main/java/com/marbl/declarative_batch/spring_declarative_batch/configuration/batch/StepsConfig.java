@@ -3,7 +3,6 @@ package com.marbl.declarative_batch.spring_declarative_batch.configuration.batch
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -16,18 +15,32 @@ import static com.marbl.declarative_batch.spring_declarative_batch.utils.Listene
 @Slf4j
 public class StepsConfig {
 
-    @NotEmpty(message = "The Step name must be provided and cannot be empty")
+    public enum StepType {
+        STEP,
+        TASKLET
+    }
+
+    @NotBlank(message = "The Step name must be provided and cannot be blank")
     private String name;
-    private int chunk = 10;
+
+    @NotNull(message = "The Step type must be specified (STEP or TASKLET)")
+    private StepType type = StepType.STEP;
+
+    private Integer chunk = 10;
+
+    // --- Components ---
     @Valid
-    @NotNull(message = "'reader' component must be provided")
     private ComponentConfig reader;
+
     @Valid
-    @NotNull(message = "'processor' component must be provided")
     private ComponentConfig processor;
+
     @Valid
-    @NotNull(message = "'writer' component must be provided")
     private ComponentConfig writer;
+
+    @Valid
+    private String tasklet;
+
     @Valid
     private List<ListenerConfig> listeners;
 
@@ -35,8 +48,8 @@ public class StepsConfig {
     private SkipConfig skip;
     private TransactionConfig transaction;
 
-
     private String next;
+
     @Valid
     private List<StepConditionConfig> transitions;
 
@@ -44,28 +57,57 @@ public class StepsConfig {
     @AssertTrue(message = "Both 'next' and 'transitions' cannot be set simultaneously")
     public boolean isValidTransitions() {
         if (next != null && transitions != null && !transitions.isEmpty()) {
-            log.warn("Step [{}] - Both 'next' [{}] and 'transitions' [{}] are set. Only one is allowed.",
-                    name, next, transitions);
+            log.warn("Step [{}] - Both 'next' [{}] and 'transitions' are set. Only one is allowed.", name, next);
             return false;
         }
         return true;
     }
 
+    // --- Validation for STEP vs TASKLET ---
+    @AssertTrue(message = "Invalid configuration: STEP requires reader, processor, and writer; TASKLET requires tasklet bean name only.")
+    public boolean isValidStepTypeConfiguration() {
+        if (type == StepType.STEP) {
+            boolean valid = reader != null && processor != null && writer != null && tasklet == null;
+            if (!valid) {
+                log.error("Step [{}] - Type STEP requires reader, processor, and writer, and must not define a tasklet.", name);
+            }
+            return valid;
+        }
 
-    // --- Processor listener validation ---
-    @AssertTrue(message = "Processor listener name must match processor bean name when processor implementing ItemProcessListener")
+        if (type == StepType.TASKLET) {
+            boolean valid = tasklet != null && reader == null && processor == null && writer == null;
+            if (!valid) {
+                log.error("Step [{}] - Type TASKLET requires a tasklet bean name and must not define reader, processor, or writer.", name);
+            }
+            return valid;
+        }
+
+        return true;
+    }
+
+    // --- Validation for chunk usage ---
+//    @AssertTrue(message = "Chunk property is only valid for STEP type and must be null for TASKLET.")
+//    public boolean isValidChunkUsage() {
+//        if (type == StepType.TASKLET && chunk != null) {
+//            log.error("Step [{}] - 'chunk' is not applicable for TASKLET type.", name);
+//            return false;
+//        }
+//        return true;
+//    }
+
+    // --- Listener validations (only for STEP type) ---
+    @AssertTrue(message = "Processor listener name must match processor bean name when processor implements ItemProcessListener")
     public boolean isProcessorListenerValid() {
-        return validateListenerMatch(name, processor, listeners, "ItemProcessListener", "Processor");
+        return type != StepType.STEP || validateListenerMatch(name, processor, listeners, "ItemProcessListener", "Processor");
     }
 
-    @AssertTrue(message = "Reader listener name must match reader bean name when reader implementing ItemReadListener")
+    @AssertTrue(message = "Reader listener name must match reader bean name when reader implements ItemReadListener")
     public boolean isReaderListenerValid() {
-        return validateListenerMatch(name, reader, listeners, "ItemReadListener", "Reader");
+        return type != StepType.STEP || validateListenerMatch(name, reader, listeners, "ItemReadListener", "Reader");
     }
 
-    @AssertTrue(message = "Writer listener name must match writer bean name when writer implementing ItemWriteListener")
+    @AssertTrue(message = "Writer listener name must match writer bean name when writer implements ItemWriteListener")
     public boolean isWriterListenerValid() {
-        return validateListenerMatch(name, writer, listeners, "ItemWriteListener", "Writer");
+        return type != StepType.STEP || validateListenerMatch(name, writer, listeners, "ItemWriteListener", "Writer");
     }
-
 }
